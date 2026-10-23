@@ -1,6 +1,6 @@
 // Pip's connection to Claude. The parent's API key is kept only on this device.
 import Anthropic from "@anthropic-ai/sdk";
-import { SUBJECTS, gradeLabel, kidAge } from "./curriculum.js";
+import { SUBJECTS, gradeLabel, kidAge } from "./course.js";
 
 const KEY = "pip-tutor-ai-v1";
 export const MODELS = [
@@ -88,24 +88,37 @@ const SUBJECT_RULES = {
   math: `- "type" is "number" when the answer is a single number or fraction (like 12, 3/4, -5, 2.5), "choice" for multiple choice, or "text" for a short word answer.
 - Prefer "number". Use "choice" for shapes, comparisons, true/false, telling time, or anything awkward to type.
 - "answer" is the exact final answer only, with no units.`,
-  english: `- Use "choice" for most problems (3 or 4 "choices", only one clearly correct). Use "text" only when the answer is one short word or phrase (a spelling, a plural, a past-tense verb).
-- For reading skills, write one short original passage that fits the grade (about ${"{len}"} words) in "passage", and ask about it. For other skills leave "passage" empty.
+  english: `- Use "choice" for most problems (3 or 4 "choices", only one clearly correct). Use "text" only when the answer is one short word (a spelling, a plural, a past-tense verb).
+- For reading topics, write a short original passage that fits the grade (about {len} words) in "passages" and point to it with the problem's "passage" number (0 for the first). Several problems can share one passage. Use -1 when a problem has no passage.
 - For spelling or sound questions, write the word or sound in the question so the child can see it.
 - "answer" is the exact correct choice or word.`,
 };
 
-export async function makeWorksheet(skill, lvl, misses) {
-  const subj = SUBJECTS[skill.subject];
-  const len = skill.grade === "K" ? 40 : Math.min(250, 60 + 25 * +skill.grade);
-  const prompt = `Write a short ${subj.name.toLowerCase()} practice worksheet for a child.
-Child: ${skill.grade === "K" ? "kindergarten" : "grade " + skill.grade} (about ${kidAge(skill.grade)} years old).
-Skill: "${skill.name}" (${subj.strands[skill.strand].name}).
-Difficulty: level ${lvl} of 3 (1 = gentle warm-up, 2 = on grade level, 3 = stretch).
-${misses.length ? `Recently the child missed these, so include similar ideas:\n${misses.map((m) => "- " + m).join("\n")}\n` : ""}
-Write exactly 5 problems that go from easier to harder. Use friendly, everyday topics kids enjoy (pets, sports, baking, space, gardens) and vary them. Keep the reading level right for the age. Do not use real brand names or real people.
+const KIND = {
+  learn: "a first practice sheet right after a new lesson",
+  practice: "a daily practice sheet",
+  extra: "an extra practice sheet",
+  quiz: "a weekly quiz",
+  test: "a monthly test on the whole unit",
+};
+
+// One worksheet, quiz or test. `items` say how many problems to write for each topic, and at what level.
+export async function makeSheet(subject, grade, kind, items, misses) {
+  const subj = SUBJECTS[subject].name;
+  const len = grade === "K" ? 40 : Math.min(250, 60 + 25 * +grade);
+  const total = items.reduce((a, it) => a + it.count, 0);
+  const list = items.map((it, i) => `${i}. "${it.topic.name}" (${gradeLabel(it.topic.grade)}${it.topic.bridge ? ", a preview of next year" : ""}${it.review ? ", review of an earlier week" : ""}): ${it.count} problem${it.count > 1 ? "s" : ""} at level ${it.level} of 3`).join("\n");
+  const prompt = `Write ${KIND[kind]} in ${subj} for a child in ${gradeLabel(grade).toLowerCase()} (about ${kidAge(grade)} years old).
+It has ${total} problems on these topics (the number before each topic is its "topic" index):
+${list}
+
+Levels: 1 = gentle warm-up, 2 = on grade level, 3 = stretch.${kind === "quiz" || kind === "test" ? " This is a check of what the child knows, so make each problem stand on its own, with clear wording and no tricks." : ""}
+${misses.length ? `The child recently missed these, so include similar ideas where they fit:\n${misses.map((m) => "- " + m).join("\n")}\n` : ""}
+Use friendly, everyday topics kids enjoy (pets, sports, baking, space, gardens) and vary them. Keep the reading level right for the age. Do not use real brand names or real people. Order the problems from easier to harder within each topic.
 
 Rules for each problem:
-${SUBJECT_RULES[skill.subject].replace("{len}", len)}
+${SUBJECT_RULES[subject].replace("{len}", len)}
+- "topic" is the index of the topic it practices.
 - For "choice", "answer" must exactly equal one of the "choices".
 - "accept" lists other ways to write the same correct answer (like "0.5" for "1/2"); it can be empty.
 - "steps" is a worked explanation of 2 to 5 short steps a child can follow, ending with the answer.
@@ -113,49 +126,82 @@ ${SUBJECT_RULES[skill.subject].replace("{len}", len)}
 - Double-check every answer before you write it.
 
 Reply with JSON only, in this shape:
-{"passage":"","problems":[{"question":"...","type":"choice","choices":["..."],"answer":"...","accept":[],"steps":["..."],"hint":"..."}]}`;
-  const text = await ask({ messages: [{ role: "user", content: prompt }], effort: "medium" });
+{"passages":[],"problems":[{"topic":0,"passage":-1,"question":"...","type":"choice","choices":["..."],"answer":"...","accept":[],"steps":["..."],"hint":"..."}]}`;
+  // Streamed because a long test can take a while to write.
+  const text = await ask({ messages: [{ role: "user", content: prompt }], effort: "medium", maxTokens: 32000, onText: () => {} });
   const r = parseJson(text);
-  const list = (r.problems || [])
+  const passages = Array.isArray(r.passages) ? r.passages.map(String) : [];
+  const out = (r.problems || [])
     .filter((p) => p && p.question && p.answer != null && Array.isArray(p.steps))
-    .slice(0, 5)
-    .map((p) => ({
-      question: String(p.question),
-      type: ["number", "choice", "text"].includes(p.type) ? p.type : "text",
-      choices: Array.isArray(p.choices) ? p.choices.map(String) : [],
-      answer: String(p.answer),
-      accept: (p.accept || []).map(String),
-      steps: p.steps.map(String),
-      hint: String(p.hint || p.steps[0] || ""),
-    }));
-  for (const p of list) {
+    .map((p) => {
+      const ti = Number.isInteger(p.topic) && items[p.topic] ? p.topic : 0;
+      const pi = Number.isInteger(p.passage) && passages[p.passage] ? p.passage : -1;
+      return {
+        topicId: items[ti].topic.id,
+        passage: pi >= 0 ? passages[pi] : "",
+        question: String(p.question),
+        type: ["number", "choice", "text"].includes(p.type) ? p.type : "text",
+        choices: Array.isArray(p.choices) ? p.choices.map(String) : [],
+        answer: String(p.answer),
+        accept: (p.accept || []).map(String),
+        steps: p.steps.map(String),
+        hint: String(p.hint || p.steps[0] || ""),
+      };
+    });
+  for (const p of out) {
     if (p.type === "choice" && !p.choices.includes(p.answer)) p.choices.push(p.answer);
     if (p.type === "choice" && p.choices.length < 2) p.type = "text";
   }
-  if (!list.length) throw { code: "bad_json" };
-  return { passage: String(r.passage || ""), problems: list };
+  if (out.length < Math.min(3, total)) throw { code: "bad_json" };
+  return out;
+}
+
+// A short kid-friendly lesson that introduces the week's topic.
+export async function makeLesson(t) {
+  const text = await ask({
+    effort: "medium",
+    messages: [{
+      role: "user",
+      content: `Write a short lesson that introduces a new ${SUBJECTS[t.subject].name} topic to a child in ${gradeLabel(t.grade).toLowerCase()} (about ${kidAge(t.grade)} years old).
+Topic: "${t.name}" (part of the unit "${t.unitTitle}").${t.bridge ? " This is a preview of next year's work, so start gently from what they already know." : ""}
+
+Speak to the child directly, warmly and simply, as Pip the owl tutor. Keep the reading level right for the age. Plain text only, no markdown.
+
+Reply with JSON only, in this shape:
+{"title":"...","intro":"1 or 2 sentences on what we'll learn and why it's useful","points":["2 to 4 short key ideas"],"example":{"problem":"one example problem","steps":["2 to 5 steps that solve it"]},"tip":"one memory trick or tip"}`,
+    }],
+  });
+  const r = parseJson(text);
+  if (!r.intro || !Array.isArray(r.points)) throw { code: "bad_json" };
+  return {
+    title: String(r.title || t.name),
+    intro: String(r.intro),
+    points: r.points.map(String).slice(0, 5),
+    example: r.example && r.example.problem ? { problem: String(r.example.problem), steps: (r.example.steps || []).map(String) } : null,
+    tip: String(r.tip || ""),
+  };
 }
 
 // Second opinion for typed answers that don't match exactly (a synonym, a small spelling slip).
-export async function judgeAnswer(skill, prob, passage, given) {
+export async function judgeAnswer(t, prob, given) {
   const text = await ask({
     messages: [{
       role: "user",
-      content: `A child in ${gradeLabel(skill.grade).toLowerCase()} answered a ${SUBJECTS[skill.subject].name.toLowerCase()} question.
-${passage ? `Passage:\n${passage}\n` : ""}Question: ${prob.question}
+      content: `A child in ${gradeLabel(t.grade).toLowerCase()} answered a ${SUBJECTS[t.subject].name.toLowerCase()} question about "${t.name}".
+${prob.passage ? `Passage:\n${prob.passage}\n` : ""}Question: ${prob.question}
 Expected answer: ${prob.answer}${prob.accept.length ? " (also fine: " + prob.accept.join(", ") + ")" : ""}
 Child's answer: ${given}
 
-Does the child's answer mean the same thing as the expected answer? Count it correct if it is right but worded differently or has a small typo, unless the skill itself is spelling. Reply with JSON only: {"correct":true or false}`,
+Does the child's answer mean the same thing as the expected answer? Count it correct if it is right but worded differently or has a small typo, unless the topic itself is spelling. Reply with JSON only: {"correct":true or false}`,
     }],
     maxTokens: 2000,
   });
   return !!parseJson(text).correct;
 }
 
-export function tutorSystem(kid, skill, p, passage, tries) {
-  return `You are Pip, a warm, patient owl who tutors kids. You are helping ${kid.name}, who is in ${gradeLabel(skill.grade).toLowerCase()} (about ${kidAge(skill.grade)} years old), with the ${SUBJECTS[skill.subject].name} skill "${skill.name}".
-${passage ? `\nThe passage on screen:\n${passage}\n` : ""}
+export function tutorSystem(kid, t, p, tries) {
+  return `You are Pip, a warm, patient owl who tutors kids. You are helping ${kid.name}, who is in ${gradeLabel(kid.grade).toLowerCase()} (about ${kidAge(kid.grade)} years old), with the ${SUBJECTS[t.subject].name} topic "${t.name}".
+${p.passage ? `\nThe passage on screen:\n${p.passage}\n` : ""}
 The problem on screen:
 ${p.question}${p.type === "choice" ? "\nChoices: " + p.choices.join(" | ") : ""}
 Correct answer (secret, for you only): ${p.answer}
@@ -164,7 +210,7 @@ What ${kid.name} has answered so far: ${tries.length ? tries.join(", ") : "nothi
 
 How to tutor:
 - Ask one small guiding question or give one hint at a time, so the child finds the next step themselves.
-- Use 1 to 3 short sentences and words a ${kidAge(skill.grade)} year old knows. No markdown or LaTeX; write math like 3 × 4 or 1/2.
+- Use 1 to 3 short sentences and words a ${kidAge(kid.grade)} year old knows. No markdown or LaTeX; write math like 3 × 4 or 1/2.
 - Don't say the final answer unless the child has tried at least twice and clearly asks you to show it. Even then, walk through it step by step.
 - If an answer they share is wrong, say what part is right first, then point at the mistake kindly.
 - Celebrate effort. Keep the chat about this problem; if they go off topic, steer back gently.

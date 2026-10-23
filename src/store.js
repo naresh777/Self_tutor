@@ -1,7 +1,7 @@
 // Family data (kids, progress, practice log) lives in this device's local storage.
 const KEY = "pip-tutor-family-v1";
 
-const blank = () => ({ kids: [], pin: "", goal: 10, progress: {}, log: [], stars: {}, updated: 0 });
+const blank = () => ({ kids: [], pin: "", progress: {}, log: [], stars: {}, done: {}, lessons: {}, updated: 0 });
 
 function load() {
   try {

@@ -6,13 +6,31 @@ It's a web app you install on an iPad or Android tablet from the browser, so it 
 
 ## What's inside
 
-- **Two subjects, K–8.** Math: number skills, word problems, and puzzles and reasoning. English: reading, words and spelling, and grammar and writing. Each grade has six skills per subject.
-- **Adaptive worksheets.** Five problems per sheet, at level 1 to 3 depending on how the child has been doing, with similar problems brought back after a miss. Reading skills come with a short original passage.
-- **Help when stuck.** A hint, a "Show me how" step-by-step solution, a chat with Pip that guides with questions, and a read-aloud button for every question and passage.
-- **Skill map.** Each skill shows Not started, Learning, Getting there, Mastered or Needs help, based on the last 10 problems.
-- **Motivation.** Stars, a daily problem goal and a practice streak.
-- **Parent corner.** Last-7-days stats per child and subject, skills that need attention, every missed problem with the child's answer, focus skills you pick, and a "Write a progress note" button.
-- **Works offline for number facts.** Addition, subtraction, multiplication, division and integer sheets are built in, so practice still works without internet or an API key.
+**A full school year for each grade, K–8, in Math and English.** Each course has 36 weeks: 8 units of 4 weekly topics, then a 4-week unit that previews next year's grade (Grade 8 reviews its own year instead). Topics follow common US grade-level standards. For example, Grade 2 math runs from addition facts and place value to 1,000 through money, time, measurement and fractions, and ends with Grade 3 previews of multiplication, division, rounding and fractions.
+
+**A plan for every school day.** Each week follows the same rhythm, for both subjects:
+
+| Day | Work |
+|---|---|
+| Monday | **New lesson**: a short lesson from Pip with a worked example, then a first practice sheet |
+| Tuesday to Thursday | **Practice** sheets that get harder through the week |
+| Friday | **Weekly quiz** on the week's topic, plus review |
+| Friday of every 4th week | **Monthly test** on the whole unit, plus review of earlier units |
+
+Every sheet also mixes in problems from earlier weeks, with weaker topics coming back more often, so skills don't fade. Quizzes and tests have no hints. At the end, kids see their score and how to solve each problem they missed.
+
+**Help when stuck.** On practice days kids can get a hint, tap "Show me how" for a step-by-step solution, or chat with Pip, who guides with questions instead of giving answers. Every question, passage and lesson can be read aloud.
+
+**Motivation.** Kids earn stars, a bonus for finishing the day, and a streak. The course map shows how each week's topic is going.
+
+**Parent corner** (behind a PIN):
+- Course position and pace (on track, or days ahead or behind) against your school calendar
+- Monthly test and weekly quiz scores for each subject
+- Topics that need review, and every missed problem with your child's answer
+- A "Write a progress note" button for a summary with next steps
+- Course settings to set the start date and move to any week, for example to match the class
+
+**Works offline for number facts.** Addition, subtraction, multiplication, division and integer topics have built-in sheets, so math practice still works without internet or an API key.
 
 ## Set it up
 
@@ -31,9 +49,9 @@ It then opens full screen from its own icon, like a regular app.
 
 ### 3. Add the family and connect Claude
 
-1. Open the app, add each child with their grade.
-2. Tap **Parent corner**, choose a PIN, then **Family settings**.
-3. Create an API key at [console.anthropic.com](https://console.anthropic.com) → **API keys**, paste it into **Pip's brain (Claude)**, and tap **Save and test**.
+1. Open the app and add each child with their grade for this school year.
+2. Tap **Parent corner** and choose a PIN. Under **Course settings**, set the start date to the first day of school, and pick the week that matches what the class is doing now.
+3. Open **Family settings**. Create an API key at [console.anthropic.com](https://console.anthropic.com) → **API keys**, paste it into **Pip's brain (Claude)**, and tap **Save and test**.
 
 Set a monthly spend limit in the Anthropic Console so costs stay predictable. You can pick a cheaper model (Sonnet or Haiku) in Family settings.
 
@@ -50,7 +68,7 @@ Set a monthly spend limit in the Anthropic Console so costs stay predictable. Yo
 ```bash
 npm install
 npm run dev      # local dev server
-npm test         # answer-checker and offline generator tests
+npm test         # course, plan, answer-checker and generator tests
 npm run build    # production build in dist/
 ```
 
@@ -58,8 +76,9 @@ Code layout:
 
 | File | What it does |
 |---|---|
-| `src/curriculum.js` | Grades, subjects, strands and skills |
-| `src/ai.js` | Claude calls: worksheets, answer checks, tutor chat, progress notes |
+| `src/course.js` | The 36-week course for each grade and subject |
+| `src/plan.js` | The daily plan, review mixing and pacing |
+| `src/ai.js` | Claude calls: lessons, worksheets, quizzes, tests, answer checks, tutor chat, progress notes |
 | `src/check.js` | Answer matching and the built-in number-fact sheets |
 | `src/store.js` | Saving family data on the device, backup and restore |
 | `src/main.js` | Screens and interactions |
