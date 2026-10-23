@@ -1,0 +1,19 @@
+{
+  "name": "self-tutor",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Pip Tutor: a math and English tutor app for kids (K-8), powered by Claude.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.131.0"
+  },
+  "devDependencies": {
+    "vite": "6.3.5"
+  }
+}
