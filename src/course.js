@@ -1,6 +1,7 @@
-// The school-year course: for each grade and subject, 8 units of 4 weekly topics (weeks 1-32),
-// then a 4-week unit 9 that previews next year's grade (Grade 8 reviews its own year instead).
-// Topics follow common US grade-level standards; the wording and order are our own.
+// The school-year course: 36 weekly topics per grade and subject, grouped into units, ending with
+// a preview of next year's grade (Grade 8 reviews its own year instead).
+// Grades 2 and 3 are written against the Texas TEKS (as taught in Frisco and Prosper ISD), with the
+// TEKS code after "#". Other grades have 8 units of 4 weeks following common US grade-level standards.
 // "name|op" marks a math topic that also has a built-in offline generator (see check.js).
 
 export const GRADES = ["K", "1", "2", "3", "4", "5", "6", "7", "8"];
@@ -37,25 +38,39 @@ const SCOPE = {
       ["Data", ["Tally charts", "Picture graphs", "Reading bar graphs", "Answering questions about data"]],
       ["Shapes and fractions", ["2D and 3D shapes", "Building new shapes", "Halves", "Fourths (quarters)"]],
     ],
+    // Texas TEKS (19 TAC 111.4), in the unit order of Frisco ISD's 2025-26 Grade 2 math scope and sequence.
+    // Texas TEKS (19 TAC 111.4), in the unit order of Frisco ISD's 2025-26 Grade 2 math scope and sequence.
     2: [
-      ["Addition and subtraction facts", ["Fluency within 20|add20", "Even and odd numbers", "Arrays and repeated addition", "Subtraction fact strategies|sub20"]],
-      ["Place value to 1,000", ["Hundreds, tens and ones", "Reading and writing numbers to 1,000", "Expanded form", "Comparing three-digit numbers"]],
-      ["Adding within 100", ["Adding tens and ones|add100", "Regrouping ones into a ten|add100", "Adding up to four two-digit numbers", "Mental math: adding 10 and 100"]],
-      ["Subtracting within 100", ["Subtracting tens and ones|add100", "Regrouping a ten|add100", "Checking subtraction with addition", "Two-step word problems"]],
-      ["Adding and subtracting within 1,000", ["Adding three-digit numbers", "Subtracting three-digit numbers", "Adding and subtracting 10 and 100", "Explaining your strategy"]],
-      ["Money and time", ["Counting coins", "Dollars and cents word problems", "Telling time to 5 minutes", "a.m. and p.m."]],
-      ["Measurement and data", ["Inches, feet, centimeters and meters", "Estimating length", "Line plots", "Picture graphs and bar graphs"]],
-      ["Shapes and fractions", ["Shapes by sides and angles", "Rows and columns in rectangles", "Halves, thirds and fourths", "Skip counting by 5s, 10s and 100s"]],
+      ["Fact strategies", ["Addition facts to 20: make a ten and doubles|add20#2.4(A)", "Subtraction facts to 20: think addition|sub20#2.4(A)"]],
+      ["Numbers to 1,200", ["Hundreds, tens and ones with base-ten blocks#2.2(A)", "Building numbers to 1,200 with thousands#2.2(A)", "Standard, word and expanded form#2.2(B)", "Making a number more than one way#2.2(A), 2.2(B)"]],
+      ["Comparing numbers to 1,200", ["Comparing and ordering with >, < and =#2.2(C), 2.2(D)", "Open number lines and 10 or 100 more or less#2.2(E), 2.2(F), 2.7(B)"]],
+      ["Adding and subtracting two-digit numbers", ["Adding two-digit numbers with mental math|add100#2.4(B)", "Adding up to four two-digit numbers#2.4(B)", "Subtracting two-digit numbers|add100#2.4(B)"]],
+      ["Adding and subtracting to 1,000", ["Adding three-digit numbers with place value#2.4(C)", "Subtracting three-digit numbers with place value#2.4(C)", "Word problems with the unknown in any spot#2.7(C), 2.4(D)"]],
+      ["Data analysis", ["Pictographs and bar graphs#2.10(A), 2.10(B)", "Solving problems with graphs#2.10(C), 2.10(D)"]],
+      ["Money", ["First-semester review: place value and adding|add100#2.2, 2.4", "Coin values and counting coins to one dollar#2.5(A)", "Writing money with ¢, $ and a decimal point#2.5(B)"]],
+      ["Geometry", ["2D shapes: sides and vertices#2.8(A), 2.8(C)", "3D solids and putting shapes together and apart#2.8(B), 2.8(D), 2.8(E)"]],
+      ["Fractions", ["Halves, fourths and eighths#2.3(A), 2.3(D)", "More parts make smaller parts; counting parts past one whole#2.3(B), 2.3(C)"]],
+      ["Time", ["Time to the minute, a.m. and p.m.#2.9(G)"]],
+      ["Measurement", ["Measuring length with rulers and units#2.9(A), 2.9(B), 2.9(D)", "Length problems, number line distances and area#2.9(C), 2.9(E), 2.9(F)"]],
+      ["Adding and subtracting to 1,000, part 2", ["Regrouping across tens and hundreds#2.4(C)", "Multi-step word problems#2.4(C), 2.7(C)", "Writing a story for a number sentence#2.4(D)"]],
+      ["Multiplication and division", ["Equal groups: joining sets to multiply#2.6(A)", "Sharing equally to divide; even and odd#2.6(B), 2.7(A)"]],
+      ["Personal financial literacy", ["Saving, spending, deposits and withdrawals#2.11(A), 2.11(B), 2.11(C)", "Borrowing, lending, producers and consumers#2.11(D), 2.11(E), 2.11(F)"]],
+      ["Getting ready for Grade 3", ["Place value to 100,000 and rounding#3.2(A), 3.2(C)", "Adding and subtracting within 1,000 with estimation#3.4(A), 3.4(B)", "Multiplication with equal groups and arrays|mulfacts#3.4(D), 3.4(E)"]],
     ],
+    // Texas TEKS (19 TAC 111.5), in the unit order of Frisco ISD's 2025-26 Grade 3 math scope and sequence.
+    // Texas TEKS (19 TAC 111.5), in the unit order of Frisco ISD's 2025-26 Grade 3 math scope and sequence.
     3: [
-      ["What multiplication means", ["Equal groups", "Arrays", "Multiplying by 2, 5 and 10|mulfacts", "Multiplication word problems"]],
-      ["What division means", ["Sharing equally", "Division as equal groups", "Fact families: multiply and divide|divfacts", "Division word problems"]],
-      ["Multiplication facts", ["Facts with 3, 4 and 6|mulfacts", "Facts with 7, 8 and 9|mulfacts", "Properties of multiplication", "Multiplying by multiples of 10"]],
-      ["Place value and rounding", ["Rounding to the nearest 10", "Rounding to the nearest 100", "Adding within 1,000", "Subtracting within 1,000"]],
-      ["Fractions", ["Unit fractions", "Fractions on a number line", "Equivalent fractions", "Comparing fractions"]],
-      ["Area", ["Understanding area", "Area by counting squares", "Area of rectangles by multiplying", "Area of combined rectangles"]],
-      ["Measurement and data", ["Time to the minute and elapsed time", "Liquid volume and mass", "Scaled picture and bar graphs", "Line plots with halves and fourths"]],
-      ["Shapes and problem solving", ["Quadrilaterals", "Perimeter", "Two-step word problems", "Patterns in the multiplication table"]],
+      ["Foundation of numbers", ["Place value to 100,000#3.2(A), 3.2(B)", "Comparing and ordering numbers to 100,000#3.2(D)", "Number lines and rounding#3.2(C)"]],
+      ["Addition and subtraction", ["Estimating sums and differences#3.4(B)", "Adding within 1,000 fluently#3.4(A)", "Subtracting within 1,000 fluently#3.4(A)", "Two-step problems with strip diagrams; perimeter#3.5(A), 3.7(B)"]],
+      ["Multiplication", ["Equal groups, arrays and skip counting#3.4(D), 3.4(E)", "Multiplication facts with strategies|mulfacts#3.4(F)", "Multiplying a two-digit number by a one-digit number#3.4(G)", "Multiplication word problems and area#3.4(K), 3.5(B), 3.5(C), 3.6(C)"]],
+      ["Division", ["Sharing equally and making equal groups#3.4(H)", "Division facts from multiplication|divfacts#3.4(F), 3.4(J)", "Division word problems; even and odd#3.4(K), 3.4(I), 3.5(B)"]],
+      ["Algebraic reasoning", ["Finding the unknown factor or product#3.5(D)", "Two-step problems with all four operations#3.4(A), 3.5(A), 3.5(B)", "Input-output tables and number pairs#3.5(E)"]],
+      ["Data and personal finance", ["Frequency tables, dot plots and scaled graphs#3.8(A), 3.8(B)", "Coins and bills; earning, saving, spending and credit#3.4(C), 3.9(A)-(F)"]],
+      ["Geometry", ["Sorting 2D and 3D figures#3.6(A)", "Quadrilaterals#3.6(B)"]],
+      ["Fractions", ["Unit fractions and fractions of a whole#3.3(A), 3.3(C)", "Fractions on a number line#3.3(B), 3.7(A)", "Building fractions from unit fractions#3.3(D)", "Sharing problems with fractions; equal-area parts#3.3(E), 3.6(E)", "Equivalent fractions#3.3(F), 3.3(G)", "Comparing fractions#3.3(H)"]],
+      ["Measurement", ["Area of rectangles and composite figures#3.6(C), 3.6(D)", "Perimeter and missing side lengths#3.7(B)", "Time intervals, liquid volume and weight#3.7(C), 3.7(D), 3.7(E)"]],
+      ["STAAR review", ["STAAR-style review: numbers and operations#3.2, 3.4, 3.5", "STAAR-style review: fractions, geometry and measurement#3.3, 3.6, 3.7"]],
+      ["Getting ready for Grade 4", ["Place value to 1,000,000#4.2(B)", "Multiplying by one-digit numbers|multimul#4.4(D)", "Division with remainders|longdiv#4.4(E), 4.4(F)", "Equivalent fractions and decimals#4.3(C), 4.2(G)"]],
     ],
     4: [
       ["Place value", ["Place value to 1,000,000", "Comparing and rounding big numbers", "Adding multi-digit numbers", "Subtracting multi-digit numbers"]],
@@ -129,25 +144,28 @@ const SCOPE = {
       ["Words", ["Compound words", "Endings -ed and -ing", "Words that sound alike", "Sorting words by category"]],
       ["Writing", ["Capital letters for names and dates", "Commas in dates and lists", "Writing an opinion", "Writing how to do something"]],
     ],
+    // Texas TEKS for English Language Arts and Reading, Grade 2 (19 TAC 110.4).
     2: [
-      ["Phonics review", ["Short and long vowels", "Bossy r: ar, or, er, ir, ur", "Vowel teams oo, ou, ow, oi, oy", "Two-syllable words"]],
-      ["Reading stories", ["Who, what, where, when, why", "How a story is built", "How characters respond", "Different voices in a story"]],
-      ["Reading information", ["Main topic of a paragraph", "Headings, bold words and glossaries", "The author's purpose", "Connecting steps and events"]],
-      ["Vocabulary", ["Prefixes un- and re-", "Suffixes -ful, -less and -ly", "Context clues", "Shades of meaning"]],
-      ["Grammar 1", ["Collective nouns", "Irregular plural nouns", "Reflexive pronouns (myself, ourselves)", "Irregular past tense verbs"]],
-      ["Grammar 2", ["Adjectives and adverbs", "Expanding sentences", "Rearranging sentences", "Contractions and apostrophes"]],
-      ["Spelling and words", ["Spelling patterns: -ight, -tch, -dge", "Compound words", "Homophones", "ABC order and the dictionary"]],
-      ["Writing", ["Opinion writing with reasons", "Informative writing with facts", "Writing a story in order", "Fables and folktales"]],
+      ["Phonics and story basics", ["Short and long vowels; open and closed syllables#2.2(B)(i)", "Silent e and vowel teams#2.2(B)(i)", "Bossy r: ar, or, er, ir, ur#2.2(B)(i)", "Story elements: characters, setting and plot#2.8(B), 2.8(C), 2.8(D)"]],
+      ["Fiction", ["Main character traits, inside and out#2.8(B)", "Plot: problem, main events and solution#2.8(C)", "Making predictions and inferences#2.6(C), 2.6(F)", "Theme: the lesson of a story#2.8(A)"]],
+      ["Word study", ["Vowel sounds oi, oy, ou, ow; contractions#2.2(B)(i), 2.2(B)(iii)", "Prefixes un-, re- and dis-#2.3(C)", "Suffixes -er, -or, -ful, -less and -ly#2.3(C)", "Synonyms, antonyms and context clues#2.3(B), 2.3(D)"]],
+      ["Informational text", ["Central idea and supporting details#2.9(D)(i)", "Text features: headings, captions, diagrams#2.9(D)(ii), 2.10(C)", "Order of events and cause and effect#2.9(D)(iii)", "Author's purpose#2.10(A)"]],
+      ["Grammar", ["Nouns: common, proper, singular and plural#2.11(D)(iii)", "Verbs: past, present and future#2.11(D)(ii)", "Adjectives, articles and adverbs#2.11(D)(iv), 2.11(D)(v)", "Pronouns and prepositions#2.11(D)(vi), 2.11(D)(vii)"]],
+      ["Folktales, poetry and drama", ["Fables and folktales#2.9(A)", "Fairy tales: comparing versions#2.9(A)", "Poetry: rhyme, rhythm, repetition and alliteration#2.9(B), 2.10(D)", "Drama: reading a play#2.9(C)"]],
+      ["Writing conventions", ["Complete sentences and subject-verb agreement#2.11(D)(i)", "Joining with and, but, or#2.11(D)(viii)", "Capital letters for months, days and names#2.11(D)(ix)", "End marks, apostrophes, and commas in lists and dates#2.11(D)(x)"]],
+      ["Writing and research", ["Personal narratives#2.12(A)", "How-to and informational writing#2.12(B)", "Letters and thank-you notes#2.12(C)", "Opinion texts and research questions#2.9(E), 2.13(A)"]],
+      ["Getting ready for Grade 3", ["Reading longer words: syllable types#3.2(A)", "Theme and character motivation#3.8(A), 3.8(B)", "Central idea and text structure#3.9(D)", "Compound sentences and dialogue punctuation#3.11(D)"]],
     ],
+    // Texas TEKS for English Language Arts and Reading, Grade 3 (19 TAC 110.5).
     3: [
-      ["Reading stories", ["Asking and answering questions", "Retelling stories and morals", "Character traits and motivations", "Chapters, scenes and stanzas"]],
-      ["Reading information", ["Main idea and key details", "Cause and effect", "Sequence of events", "Comparing two texts"]],
-      ["Words", ["Prefixes and suffixes", "Root words", "Literal and nonliteral meaning", "Synonyms and antonyms"]],
-      ["Grammar 1", ["Parts of speech", "Regular and irregular plurals", "Abstract nouns", "Verb tenses"]],
-      ["Grammar 2", ["Subject-verb agreement", "Comparing with -er and -est", "Conjunctions", "Simple and compound sentences"]],
-      ["Punctuation", ["Capitalizing titles", "Commas in addresses", "Quotation marks in dialogue", "Possessives"]],
-      ["Spelling", ["Adding suffixes", "Spelling patterns and rules", "Homophones", "Using a dictionary"]],
-      ["Writing", ["Opinion paragraphs", "Informative paragraphs with linking words", "Stories with dialogue", "Revising and editing"]],
+      ["Reading strategies", ["Decoding multisyllable words#3.2(A)", "Homophones and spelling patterns#3.2(B)", "Making inferences with evidence#3.6(F), 3.6(G)", "Retelling and summarizing#3.7(D)"]],
+      ["Fiction", ["Theme#3.8(A)", "Character feelings, traits and motivations#3.8(B)", "Plot: rising action, climax and resolution#3.8(C)", "Setting and how it shapes the plot#3.8(D)"]],
+      ["Vocabulary", ["Prefixes and suffixes#3.3(C)", "Context clues and multiple-meaning words#3.3(B)", "Synonyms, antonyms and homographs#3.3(D)", "Similes and metaphors#3.10(D)"]],
+      ["Informational text", ["Central idea and supporting details#3.9(D)(i)", "Text features#3.9(D)(ii)", "Text structures: compare, cause and effect, problem and solution#3.9(D)(iii)", "Author's purpose and message#3.10(A)"]],
+      ["Grammar", ["Compound sentences with coordinating conjunctions#3.11(D)(i)", "Verb tenses and irregular verbs#3.11(D)(ii)", "Plural, collective and possessive nouns#3.11(D)(iii)", "Adjectives and adverbs that compare#3.11(D)(iv), 3.11(D)(v)"]],
+      ["Genres", ["Folktales, fables and myths#3.9(A)", "Poetry: rhyme, meter and stanzas#3.9(B)", "Drama: dialogue and stage directions#3.9(C)", "Persuasive texts: claims and reasons#3.9(E)"]],
+      ["Conventions", ["Pronouns#3.11(D)(vi)", "Capitalizing titles and places#3.11(D)(viii)", "Commas, apostrophes and quotation marks#3.11(D)(ix)", "Editing for complete sentences#3.11(D)(i)"]],
+      ["Writing and STAAR review", ["Personal narratives and stories#3.12(A)", "Informational writing#3.12(B)", "Opinion writing#3.12(C)", "STAAR-style reading review#3.6, 3.8, 3.9"]],
     ],
     4: [
       ["Reading stories", ["Theme", "Characters, setting and events", "First and third person", "Stories from different cultures"]],
@@ -202,32 +220,50 @@ const SCOPE = {
   },
 };
 
-function topicFrom(subject, grade, unit, week, raw, extra = {}) {
-  const [name, op] = raw.split("|");
-  return { id: `${subject}-${grade}-w${week}`, subject, grade, unit, week, name, op, unitTitle: SCOPE[subject][grade][unit - 1]?.[0], ...extra };
+// Grades written week by week against the Texas TEKS, including their own preview of next year.
+export const TEKS = { math: ["2", "3"], english: ["2", "3"] };
+export const isTeks = (subject, grade) => TEKS[subject].includes(grade);
+
+function parse(raw) {
+  const [head, teks] = raw.split("#");
+  const [name, op] = head.split("|");
+  return { name, op, teks };
 }
 
+function topicFrom(subject, grade, unit, week, raw, extra = {}) {
+  return { id: `${subject}-${grade}-w${week}`, subject, grade, unit, week, ...parse(raw), unitTitle: SCOPE[subject][grade][unit - 1]?.[0], ...extra };
+}
+
+const NEXT_PREVIEW = "Getting ready for ";
 const yearCache = {};
 // All 36 weekly topics for one subject in a grade's course.
 export function year(subject, grade) {
   const key = subject + grade;
   if (yearCache[key]) return yearCache[key];
   const weeks = [];
-  SCOPE[subject][grade].forEach(([, topics], u) =>
-    topics.forEach((t, i) => weeks.push(topicFrom(subject, grade, u + 1, u * 4 + i + 1, t))),
-  );
   const ng = nextGrade(grade);
-  if (ng) {
-    // Unit 9 previews the first topic of next year's units 1-4.
-    const title = `Getting ready for ${gradeLabel(ng)}`;
-    for (let i = 0; i < 4; i++) {
-      const t = topicFrom(subject, ng, i + 1, 33 + i, SCOPE[subject][ng][i][1][0], { bridge: true });
-      weeks.push({ ...t, id: `${subject}-${grade}-w${33 + i}`, unit: 9, week: 33 + i, unitTitle: title });
+  SCOPE[subject][grade].forEach(([title, topics], u) =>
+    topics.forEach((t) => {
+      const w = weeks.length + 1;
+      // A grade's own "Getting ready" unit holds next year's topics.
+      const bridge = title.startsWith(NEXT_PREVIEW);
+      weeks.push(topicFrom(subject, grade, u + 1, w, t, bridge ? { grade: ng, bridge: true } : {}));
+    }),
+  );
+  if (weeks.length < WEEKS && ng) {
+    // Otherwise the last unit previews the first topic of next year's first units.
+    const unit = SCOPE[subject][grade].length + 1;
+    const title = `${NEXT_PREVIEW}${gradeLabel(ng)}`;
+    for (let i = 0; weeks.length < WEEKS; i++) {
+      const [, topics] = SCOPE[subject][ng][i];
+      weeks.push({ ...topicFrom(subject, ng, i + 1, 0, topics[0]), id: `${subject}-${grade}-w${weeks.length + 1}`, unit, week: weeks.length + 1, unitTitle: title, bridge: true });
     }
-  } else {
-    for (let i = 0; i < 4; i++)
-      weeks.push({ id: `${subject}-${grade}-w${33 + i}`, subject, grade, unit: 9, week: 33 + i, name: `Review: ${SCOPE[subject][grade][i * 2][0]} and ${SCOPE[subject][grade][i * 2 + 1][0]}`, unitTitle: "Year review", review: true });
+  } else if (weeks.length < WEEKS) {
+    const unit = SCOPE[subject][grade].length + 1;
+    for (let i = 0; weeks.length < WEEKS; i++)
+      weeks.push({ id: `${subject}-${grade}-w${weeks.length + 1}`, subject, grade, unit, week: weeks.length + 1, name: `Review: ${SCOPE[subject][grade][i * 2][0]} and ${SCOPE[subject][grade][i * 2 + 1][0]}`, unitTitle: "Year review", review: true });
   }
+  if (weeks.length !== WEEKS) throw new Error(`${subject} ${grade} has ${weeks.length} weeks`);
   return (yearCache[key] = weeks);
 }
 

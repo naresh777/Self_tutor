@@ -11,15 +11,17 @@ test("every grade has a full 36-week year in each subject", () => {
       const y = year(s, g);
       assert.equal(y.length, WEEKS, `${s} ${g}`);
       assert.equal(new Set(y.map((t) => t.id)).size, WEEKS);
-      assert.equal(units(s, g).length, 9);
+      assert.ok(units(s, g).length >= 9);
       y.forEach((t, i) => { assert.equal(t.week, i + 1); assert.ok(t.name && t.unitTitle); assert.equal(topic(t.id), t); });
     }
 });
 
 test("grade 2 ends with grade 3 preview weeks", () => {
-  const last = year("math", "2").slice(32);
-  assert.ok(last.every((t) => t.bridge && t.grade === "3" && t.unit === 9));
-  assert.equal(last[0].name, "Equal groups");
+  const last = year("math", "2").slice(33);
+  assert.ok(last.every((t) => t.bridge && t.grade === "3" && t.unitTitle === "Getting ready for Grade 3"));
+  assert.equal(year("english", "2")[0].teks, "2.2(B)(i)");
+  assert.equal(last[0].name, "Place value to 100,000 and rounding");
+  assert.equal(last.length, 3);
 });
 
 test("weekly rhythm: lesson, practice, Friday quiz, monthly test every 4th week", () => {
@@ -29,7 +31,7 @@ test("weekly rhythm: lesson, practice, Friday quiz, monthly test every 4th week"
   assert.deepEqual(advance({ week: 3, day: 4 }), { week: 4, day: 0 });
 });
 
-test("sheets mix in review, tests cover the whole unit", () => {
+test("sheets mix in review, monthly tests cover the last four weeks", () => {
   const practice = sheetPlan("math", "2", 6, 2, peek);
   assert.equal(practice.items[0].topic.week, 6);
   assert.ok(practice.items.some((it) => it.review && it.topic.week < 6));

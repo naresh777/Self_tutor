@@ -1,0 +1,249 @@
+// Math pictures drawn as SVG from small JSON specs (written by Claude or the offline generators):
+// number lines, base-ten blocks, ten frames, strip diagrams, arrays, equal groups, clocks, coins,
+// fraction models, bar graphs and place-value charts. Every spec is checked and clamped here,
+// so a bad spec draws nothing instead of breaking the page.
+
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const int = (v, lo, hi) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : null; };
+const svg = (w, h, body, label) => `<svg class="viz" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(label)}" style="max-width:${w}px">${body}</svg>`;
+const text = (x, y, t, cls = "", anchor = "middle") => `<text x="${x}" y="${y}" text-anchor="${anchor}" class="${cls}">${esc(t)}</text>`;
+
+/* ---------- number line with jumps ---------- */
+function numberline(v) {
+  let start = int(v.start, -1200, 1200), end = int(v.end, -1200, 1200);
+  if (start === null || end === null || end <= start) return "";
+  const jumps = (Array.isArray(v.jumps) ? v.jumps : []).slice(0, 8).map((j) => ({ from: int(j.from, start, end), to: int(j.to, start, end), label: j.label })).filter((j) => j.from !== null && j.to !== null && j.from !== j.to);
+  const marks = (Array.isArray(v.marks) ? v.marks : []).map((m) => int(m, start, end)).filter((m) => m !== null);
+  const W = 640, x0 = 30, x1 = W - 30, H = 120, y = 88;
+  const X = (n) => x0 + ((n - start) / (end - start)) * (x1 - x0);
+  const span = end - start;
+  const step = span <= 20 ? 1 : span <= 50 ? 5 : span <= 100 ? 10 : span <= 500 ? 50 : 100;
+  let out = `<line x1="${x0 - 12}" y1="${y}" x2="${x1 + 12}" y2="${y}" class="ink" stroke-width="2.5"/><path d="M${x1 + 12} ${y - 6} L${x1 + 22} ${y} L${x1 + 12} ${y + 6}" class="ink" fill="none" stroke-width="2.5"/><path d="M${x0 - 12} ${y - 6} L${x0 - 22} ${y} L${x0 - 12} ${y + 6}" class="ink" fill="none" stroke-width="2.5"/>`;
+  const labeled = new Set([start, end, ...jumps.flatMap((j) => [j.from, j.to]), ...marks]);
+  for (let n = Math.ceil(start / step) * step; n <= end; n += step) {
+    out += `<line x1="${X(n)}" y1="${y - 7}" x2="${X(n)}" y2="${y + 7}" class="ink" stroke-width="1.5"/>`;
+    if (span <= 20 || n % (step * 2) === 0 || labeled.has(n)) labeled.add(n);
+  }
+  for (const n of labeled) out += `<line x1="${X(n)}" y1="${y - 9}" x2="${X(n)}" y2="${y + 9}" class="ink" stroke-width="2"/>` + text(X(n), y + 26, n, "lbl");
+  jumps.forEach((j, i) => {
+    const a = X(j.from), b = X(j.to), up = 26 + (i % 2) * 14, mid = (a + b) / 2;
+    const cls = j.to > j.from ? "jump-up" : "jump-down";
+    out += `<path d="M${a} ${y - 4} Q${mid} ${y - up * 2} ${b} ${y - 4}" fill="none" class="${cls}" stroke-width="3"/><circle cx="${b}" cy="${y - 4}" r="4" class="${cls}-dot"/>`;
+    out += text(mid, y - up - 8, j.label ?? (j.to > j.from ? `+${j.to - j.from}` : `−${j.from - j.to}`), `jl ${cls}-t`);
+  });
+  for (const m of marks) out += `<circle cx="${X(m)}" cy="${y}" r="7" class="mark"/>`;
+  return svg(W, H, out, `Number line from ${start} to ${end}`);
+}
+
+/* ---------- base-ten blocks (with regrouping for subtraction) ---------- */
+function placeParts(n) { return { th: Math.floor(n / 1000), h: Math.floor((n % 1000) / 100), t: Math.floor((n % 100) / 10), o: n % 10 }; }
+function drawBlocks(p, x, y, take = { th: 0, h: 0, t: 0, o: 0 }) {
+  let out = "", cx = x;
+  const cross = (x1, y1, x2, y2) => `<path d="M${x1} ${y1} L${x2} ${y2} M${x2} ${y1} L${x1} ${y2}" class="cross" stroke-width="3"/>`;
+  for (let i = 0; i < p.th; i++) { out += `<rect x="${cx}" y="${y}" width="60" height="60" rx="3" class="b-th"/><rect x="${cx + 8}" y="${y - 8}" width="60" height="60" rx="3" class="b-th2"/>` + (i >= p.th - take.th ? cross(cx, y - 8, cx + 68, y + 60) : ""); cx += 80; }
+  for (let i = 0; i < p.h; i++) {
+    let g = `<rect x="${cx}" y="${y}" width="60" height="60" rx="2" class="b-h"/>`;
+    for (let k = 1; k < 10; k++) g += `<line x1="${cx + k * 6}" y1="${y}" x2="${cx + k * 6}" y2="${y + 60}" class="grid"/><line x1="${cx}" y1="${y + k * 6}" x2="${cx + 60}" y2="${y + k * 6}" class="grid"/>`;
+    out += g + (i >= p.h - take.h ? cross(cx, y, cx + 60, y + 60) : ""); cx += 68;
+  }
+  if (p.h || p.th) cx += 8;
+  for (let i = 0; i < p.t; i++) {
+    let g = `<rect x="${cx}" y="${y}" width="10" height="60" rx="2" class="b-t"/>`;
+    for (let k = 1; k < 10; k++) g += `<line x1="${cx}" y1="${y + k * 6}" x2="${cx + 10}" y2="${y + k * 6}" class="grid"/>`;
+    out += g + (i >= p.t - take.t ? cross(cx - 2, y, cx + 12, y + 60) : ""); cx += 15;
+  }
+  if (p.t) cx += 10;
+  for (let i = 0; i < p.o; i++) {
+    const ox = cx + Math.floor(i / 5) * 14, oy = y + (i % 5) * 12;
+    out += `<rect x="${ox}" y="${oy}" width="10" height="10" rx="2" class="b-o"/>` + (i >= p.o - take.o ? cross(ox - 1, oy - 1, ox + 11, oy + 11) : "");
+  }
+  cx += Math.ceil(p.o / 5) * 14;
+  return { out, w: cx - x };
+}
+function blocks(v) {
+  const nums = (Array.isArray(v.numbers) ? v.numbers : [v.number]).map((n) => int(n, 0, 1200)).filter((n) => n !== null).slice(0, 2);
+  if (!nums.length) return "";
+  const op = v.op === "-" ? "-" : "+";
+  let out = "", x = 10, notes = [];
+  if (op === "-" && nums.length === 2 && nums[1] <= nums[0]) {
+    // Show the first number after any trades, with the taken-away blocks crossed out.
+    const a = placeParts(nums[0]), b = placeParts(nums[1]);
+    if (a.o < b.o) { a.t--; a.o += 10; notes.push("Trade 1 ten for 10 ones"); }
+    if (a.t < b.t || a.t < 0) { a.h--; a.t += 10; notes.push("Trade 1 hundred for 10 tens"); }
+    if (a.h < b.h || a.h < 0) { a.th--; a.h += 10; notes.push("Trade 1 thousand for 10 hundreds"); }
+    const d = drawBlocks(a, x, 22, b);
+    out += d.out; x += d.w;
+    out += text(10, 14, `${nums[0]} − ${nums[1]}: cross out ${nums[1]}`, "cap", "start");
+    if (notes.length) out += text(10, 104, notes.join(" · "), "cap note", "start");
+    return svg(Math.max(240, x + 10), notes.length ? 112 : 96, out, `Base-ten blocks for ${nums[0]} minus ${nums[1]}`);
+  }
+  nums.forEach((n, i) => {
+    const d = drawBlocks(placeParts(n), x, 22);
+    out += d.out + text(x + d.w / 2, 100, n, "lbl");
+    x += d.w + 16;
+    if (i === 0 && nums.length > 1) { out += text(x + 4, 58, op === "-" ? "−" : "+", "op"); x += 28; }
+  });
+  return svg(Math.max(160, x), 108, out, `Base-ten blocks for ${nums.join(op === "-" ? " minus " : " plus ")}`);
+}
+
+/* ---------- ten frames ---------- */
+function tenframe(v) {
+  const filled = int(v.filled, 0, 20) ?? 0, total = filled > 10 || int(v.total, 10, 20) === 20 ? 20 : 10;
+  const extra = int(v.added, 0, 20 - filled) ?? 0, crossed = int(v.crossed, 0, filled) ?? 0;
+  let out = "";
+  for (let f = 0; f < total / 10; f++)
+    for (let i = 0; i < 10; i++) {
+      const x = 10 + f * 220 + (i % 5) * 40, y = 10 + Math.floor(i / 5) * 40, k = f * 10 + i;
+      out += `<rect x="${x}" y="${y}" width="40" height="40" class="cell"/>`;
+      if (k < filled) out += `<circle cx="${x + 20}" cy="${y + 20}" r="14" class="ctr"/>` + (k >= filled - crossed ? `<path d="M${x + 8} ${y + 8} L${x + 32} ${y + 32} M${x + 32} ${y + 8} L${x + 8} ${y + 32}" class="cross" stroke-width="3"/>` : "");
+      else if (k < filled + extra) out += `<circle cx="${x + 20}" cy="${y + 20}" r="14" class="ctr2"/>`;
+    }
+  return svg(total === 20 ? 440 : 220, 100, out, `Ten frame with ${filled} counters`);
+}
+
+/* ---------- strip diagram (bar model) ---------- */
+function strip(v) {
+  const parts = (Array.isArray(v.parts) ? v.parts : []).slice(0, 5).map((p) => (p === "?" ? "?" : int(p, 0, 100000))).filter((p) => p !== null);
+  if (!parts.length) return "";
+  const total = v.total === "?" ? "?" : int(v.total, 0, 100000);
+  const known = parts.filter((p) => p !== "?");
+  const sumKnown = known.reduce((a, b) => a + b, 0);
+  const whole = typeof total === "number" ? total : sumKnown + (parts.includes("?") ? Math.max(1, sumKnown / known.length || 1) : 0);
+  const unknownSize = Math.max(whole - sumKnown, whole * 0.15) / Math.max(1, parts.filter((p) => p === "?").length);
+  const sizes = parts.map((p) => (p === "?" ? unknownSize : Math.max(p, whole * 0.08)));
+  const sum = sizes.reduce((a, b) => a + b, 0);
+  const W = 560, x0 = 10;
+  let x = x0, out = "";
+  parts.forEach((p, i) => {
+    const w = (sizes[i] / sum) * (W - 20);
+    out += `<rect x="${x}" y="46" width="${w}" height="44" class="${p === "?" ? "part-q" : i % 2 ? "part2" : "part1"}"/>` + text(x + w / 2, 75, p, "lbl big");
+    x += w;
+  });
+  out += `<path d="M${x0} 34 L${x0} 26 L${W - 10} 26 L${W - 10} 34" fill="none" class="ink" stroke-width="2"/>` + text(W / 2, 18, total ?? "", "lbl big");
+  return svg(W, 100, out, "Strip diagram");
+}
+
+/* ---------- arrays and equal groups ---------- */
+function array(v) {
+  const r = int(v.rows, 1, 12), c = int(v.cols, 1, 12);
+  if (!r || !c) return "";
+  let out = "";
+  for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) out += `<circle cx="${20 + j * 28}" cy="${20 + i * 28}" r="10" class="ctr"/>`;
+  out += text(20 + c * 28, 20 + (r - 1) * 14 + 4, `${r} rows of ${c}`, "cap", "start");
+  return svg(40 + c * 28 + 110, 16 + r * 28, out, `Array with ${r} rows of ${c}`);
+}
+function groups(v) {
+  const g = int(v.groups, 1, 10), e = int(v.each, 0, 12);
+  if (!g || e === null) return "";
+  const cols = Math.min(g, 5), R = 44;
+  let out = "";
+  for (let i = 0; i < g; i++) {
+    const cx = 54 + (i % cols) * 108, cy = 54 + Math.floor(i / cols) * 108;
+    out += `<circle cx="${cx}" cy="${cy}" r="${R}" class="grp"/>`;
+    for (let k = 0; k < e; k++) { const a = (k / Math.max(1, e)) * Math.PI * 2, rr = e === 1 ? 0 : 24; out += `<circle cx="${cx + Math.cos(a) * rr}" cy="${cy + Math.sin(a) * rr}" r="7" class="ctr"/>`; }
+  }
+  return svg(cols * 108, Math.ceil(g / cols) * 108, out, `${g} groups of ${e}`);
+}
+
+/* ---------- clock ---------- */
+function clock(v) {
+  const h = int(v.hour, 1, 12), m = int(v.minute, 0, 59);
+  if (h === null || m === null) return "";
+  let out = `<circle cx="80" cy="80" r="72" class="face"/>`;
+  for (let i = 1; i <= 12; i++) { const a = (i / 12) * Math.PI * 2 - Math.PI / 2; out += text(80 + Math.cos(a) * 56, 80 + Math.sin(a) * 56 + 6, i, "lbl"); }
+  for (let i = 0; i < 60; i++) { const a = (i / 60) * Math.PI * 2, r1 = i % 5 ? 67 : 63; out += `<line x1="${80 + Math.sin(a) * r1}" y1="${80 - Math.cos(a) * r1}" x2="${80 + Math.sin(a) * 71}" y2="${80 - Math.cos(a) * 71}" class="ink" stroke-width="${i % 5 ? 1 : 2}"/>`; }
+  const ma = (m / 60) * Math.PI * 2, ha = (((h % 12) + m / 60) / 12) * Math.PI * 2;
+  out += `<line x1="80" y1="80" x2="${80 + Math.sin(ha) * 36}" y2="${80 - Math.cos(ha) * 36}" class="hand-h" stroke-width="6" stroke-linecap="round"/><line x1="80" y1="80" x2="${80 + Math.sin(ma) * 54}" y2="${80 - Math.cos(ma) * 54}" class="hand-m" stroke-width="4" stroke-linecap="round"/><circle cx="80" cy="80" r="5" class="ink-fill"/>`;
+  return svg(160, 160, out, "Clock");
+}
+
+/* ---------- coins and bills ---------- */
+const COINS = { dollar: [100, "$1", 0], quarter: [25, "25¢", 25], half: [50, "50¢", 28], dime: [10, "10¢", 17], nickel: [5, "5¢", 20], penny: [1, "1¢", 18] };
+function coins(v) {
+  const list = [];
+  for (const [k, [, label, r]] of Object.entries(COINS)) for (let i = 0; i < (int(v[k] ?? v[k + "s"] ?? (k === "penny" ? v.pennies : undefined), 0, 12) || 0); i++) list.push({ k, label, r });
+  if (!list.length || list.length > 24) return "";
+  let x = 10, y = 10, out = "", rowH = 0, maxX = 0;
+  for (const c of list) {
+    const w = c.k === "dollar" ? 110 : c.r * 2;
+    if (x + w > 600) { x = 10; y += rowH + 10; rowH = 0; }
+    if (c.k === "dollar") out += `<rect x="${x}" y="${y}" width="110" height="52" rx="5" class="bill"/>` + text(x + 55, y + 33, "$1", "lbl big");
+    else out += `<circle cx="${x + c.r}" cy="${y + 26}" r="${c.r}" class="coin coin-${c.k}"/>` + text(x + c.r, y + 31, c.label, "lbl sm");
+    x += w + 10; rowH = Math.max(rowH, 52); maxX = Math.max(maxX, x);
+  }
+  return svg(maxX, y + rowH + 10, out, "Coins");
+}
+
+/* ---------- fraction models ---------- */
+function fraction(v) {
+  const n = int(v.parts, 1, 12), s = int(v.shaded, 0, 12 * 3);
+  if (!n || s === null) return "";
+  const wholes = Math.max(1, Math.min(3, Math.ceil(s / n) || 1));
+  let out = "";
+  for (let w = 0; w < wholes; w++) {
+    const shadedHere = Math.max(0, Math.min(n, s - w * n));
+    if (v.shape === "circle") {
+      const cx = 70 + w * 150, cy = 70, r = 60;
+      for (let i = 0; i < n; i++) {
+        const a1 = (i / n) * Math.PI * 2 - Math.PI / 2, a2 = ((i + 1) / n) * Math.PI * 2 - Math.PI / 2;
+        out += n === 1 ? `<circle cx="${cx}" cy="${cy}" r="${r}" class="${i < shadedHere ? "fr-on" : "fr-off"}"/>` : `<path d="M${cx} ${cy} L${cx + Math.cos(a1) * r} ${cy + Math.sin(a1) * r} A${r} ${r} 0 ${n === 2 ? 0 : 0} 1 ${cx + Math.cos(a2) * r} ${cy + Math.sin(a2) * r} Z" class="${i < shadedHere ? "fr-on" : "fr-off"}"/>`;
+      }
+    } else {
+      const W = 300, x0 = 10, y0 = 10 + w * 60;
+      for (let i = 0; i < n; i++) out += `<rect x="${x0 + (i * W) / n}" y="${y0}" width="${W / n}" height="44" class="${i < shadedHere ? "fr-on" : "fr-off"}"/>`;
+    }
+  }
+  return v.shape === "circle" ? svg(wholes * 150, 140, out, `${s} of ${n} equal parts shaded`) : svg(320, wholes * 60 + 4, out, `${s} of ${n} equal parts shaded`);
+}
+
+/* ---------- bar graph and pictograph ---------- */
+function graph(v) {
+  const labels = (Array.isArray(v.labels) ? v.labels : []).slice(0, 6).map(String);
+  const vals = (Array.isArray(v.values) ? v.values : []).slice(0, labels.length).map((x) => int(x, 0, 1000) ?? 0);
+  if (!labels.length || vals.length !== labels.length) return "";
+  const W = 520, H = 240, x0 = 50, y0 = 200, max = Math.max(...vals, 1), step = int(v.step, 1, 100) || (max <= 10 ? 1 : max <= 20 ? 2 : max <= 50 ? 5 : 10);
+  const top = Math.ceil(max / step) * step, Y = (n) => y0 - (n / top) * 160, bw = (W - x0 - 20) / labels.length;
+  let out = v.title ? text(W / 2, 18, v.title, "lbl") : "";
+  // A pictograph is read by counting pictures with the key, so it gets no number scale.
+  if (v.kind !== "pictograph") for (let n = 0; n <= top; n += step) out += `<line x1="${x0}" y1="${Y(n)}" x2="${W - 10}" y2="${Y(n)}" class="grid"/>` + text(x0 - 8, Y(n) + 4, n, "lbl sm", "end");
+  if (v.kind === "pictograph") {
+    labels.forEach((l, i) => {
+      const per = int(v.key, 1, 10) || 1;
+      for (let k = 0; k < Math.round(vals[i] / per) && k < 12; k++) out += `<circle cx="${x0 + i * bw + bw / 2}" cy="${y0 - 10 - k * 15}" r="6" class="ctr"/>`;
+      out += text(x0 + i * bw + bw / 2, y0 + 20, l, "lbl sm");
+    });
+    if (int(v.key, 1, 10) > 1) out += text(W - 10, 36, `Each ● = ${int(v.key, 1, 10)}`, "cap", "end");
+  } else {
+    labels.forEach((l, i) => { out += `<rect x="${x0 + i * bw + bw * 0.2}" y="${Y(vals[i])}" width="${bw * 0.6}" height="${y0 - Y(vals[i])}" class="${i % 2 ? "part2" : "part1"}"/>` + text(x0 + i * bw + bw / 2, y0 + 20, l, "lbl sm"); });
+  }
+  out += `<line x1="${x0}" y1="${y0}" x2="${W - 10}" y2="${y0}" class="ink" stroke-width="2"/>${v.kind === "pictograph" ? "" : `<line x1="${x0}" y1="${y0}" x2="${x0}" y2="30" class="ink" stroke-width="2"/>`}`;
+  return svg(W, H, out, v.title || "Graph");
+}
+
+/* ---------- place value chart ---------- */
+function placevalue(v) {
+  const n = int(v.number, 0, 999999);
+  if (n === null) return "";
+  const names = ["hundred thousands", "ten thousands", "thousands", "hundreds", "tens", "ones"];
+  const digits = String(n).padStart(6, "0").split("");
+  const first = Math.min(digits.findIndex((d) => d !== "0"), 3);
+  const cols = names.slice(first === -1 ? 3 : first), ds = digits.slice(first === -1 ? 3 : first);
+  const cw = 96;
+  let out = "";
+  cols.forEach((c, i) => { out += `<rect x="${10 + i * cw}" y="10" width="${cw}" height="34" class="pv-h"/>` + text(10 + i * cw + cw / 2, 32, c, "lbl sm") + `<rect x="${10 + i * cw}" y="44" width="${cw}" height="52" class="cell"/>` + text(10 + i * cw + cw / 2, 80, ds[i], "lbl big"); });
+  return svg(20 + cols.length * cw, 106, out, `Place value chart for ${n}`);
+}
+
+const DRAW = { numberline, blocks, tenframe, strip, bar: strip, barmodel: strip, array, groups, clock, coins, fraction, graph, placevalue };
+
+export function renderVisual(v) {
+  if (!v || typeof v !== "object" || !DRAW[v.type]) return "";
+  try {
+    const s = DRAW[v.type](v);
+    return s ? `<figure class="vizbox">${s}${v.caption ? `<figcaption>${esc(v.caption)}</figcaption>` : ""}</figure>` : "";
+  } catch {
+    return "";
+  }
+}
+
+export const VISUAL_TYPES = Object.keys(DRAW);
