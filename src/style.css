@@ -161,3 +161,37 @@ label.f{min-width:0;max-width:100%}
   .week .pill{grid-column:2;justify-self:start}
   .week .wkd{grid-column:2}
 }
+/* Math pictures (src/visuals.js). Colors come from the theme tokens, so they follow light and dark mode. */
+.vizbox{margin:0;padding:12px;background:var(--paper);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:6px;max-width:100%;overflow:hidden}
+.vizbox figcaption{color:var(--muted);font-size:.9rem;text-align:center}
+.viz{width:100%;height:auto;display:block;overflow:visible}
+.viz text{font-family:var(--body);fill:var(--ink)}
+.viz .lbl{font-size:18px;font-weight:700}.viz .lbl.big{font-size:21px;font-weight:800}.viz .lbl.sm{font-size:14px}
+.viz .cap{font-size:16px;fill:var(--muted);font-weight:700}.viz .note{fill:var(--plum)}
+.viz .op{font-size:30px;font-weight:800;fill:var(--accent)}
+.viz .jl{font-size:16px;font-weight:800}
+.viz .ink{stroke:var(--ink)}.viz .ink-fill{fill:var(--ink)}
+.viz .grid{stroke:var(--line);stroke-width:1}
+.viz .jump-up{stroke:var(--teal)}.viz .jump-up-dot{fill:var(--teal)}.viz .jump-up-t{fill:var(--teal)}
+.viz .jump-down{stroke:var(--accent)}.viz .jump-down-dot{fill:var(--accent)}.viz .jump-down-t{fill:var(--accent)}
+.viz .mark{fill:var(--sun);stroke:var(--ink);stroke-width:2}
+.viz .cross{stroke:var(--bad);stroke-linecap:round}
+.viz .b-th,.viz .b-th2{fill:var(--plum);stroke:var(--ink);stroke-width:1.5;opacity:.9}.viz .b-th2{opacity:.55}
+.viz .b-h{fill:var(--teal);stroke:var(--ink);stroke-width:1.5;fill-opacity:.35}
+.viz .b-t{fill:var(--sun);stroke:var(--ink);stroke-width:1.5}
+.viz .b-o{fill:var(--accent);stroke:var(--ink);stroke-width:1}
+.viz .cell{fill:var(--card);stroke:var(--ink);stroke-width:2}
+.viz .ctr{fill:var(--teal)}.viz .ctr2{fill:var(--sun);stroke:var(--ink);stroke-width:1.5}
+.viz .part1{fill:var(--teal);fill-opacity:.25;stroke:var(--ink);stroke-width:2}
+.viz .part2{fill:var(--sun);fill-opacity:.35;stroke:var(--ink);stroke-width:2}
+.viz .part-q{fill:var(--card);stroke:var(--accent);stroke-width:2.5;stroke-dasharray:6 4}
+.viz .grp{fill:var(--card);stroke:var(--plum);stroke-width:2.5}
+.viz .face{fill:var(--card);stroke:var(--ink);stroke-width:3}
+.viz .hand-h{stroke:var(--ink)}.viz .hand-m{stroke:var(--accent)}
+.viz .bill{fill:var(--good-bg);stroke:var(--good);stroke-width:2.5}
+.viz .coin{stroke:var(--ink);stroke-width:2}
+.viz .coin-quarter,.viz .coin-dime,.viz .coin-half{fill:#c9d1dc}.viz .coin-nickel{fill:#aab4c1}.viz .coin-penny{fill:#d08a52}
+.viz .coin~text{fill:#1d2a44}
+.viz .fr-on{fill:var(--plum);fill-opacity:.7;stroke:var(--ink);stroke-width:2}.viz .fr-off{fill:var(--card);stroke:var(--ink);stroke-width:2}
+.viz .pv-h{fill:var(--idle);stroke:var(--ink);stroke-width:2}
+.steps .vizbox,.lesson .vizbox{margin-bottom:6px}

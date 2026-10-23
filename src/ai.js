@@ -1,6 +1,6 @@
 // Pip's connection to Claude. The parent's API key is kept only on this device.
 import Anthropic from "@anthropic-ai/sdk";
-import { SUBJECTS, gradeLabel, kidAge } from "./course.js";
+import { SUBJECTS, gradeLabel, kidAge, isTeks } from "./course.js";
 
 const KEY = "pip-tutor-ai-v1";
 export const MODELS = [
@@ -94,25 +94,49 @@ const SUBJECT_RULES = {
 - "answer" is the exact correct choice or word.`,
 };
 
+// The picture specs src/visuals.js can draw. Claude picks one and fills in the numbers.
+const VISUALS = `Pictures you can attach (JSON objects; the app draws them):
+- {"type":"numberline","start":30,"end":60,"jumps":[{"from":38,"to":48},{"from":48,"to":53}],"marks":[38]}  open number line with hops (up for adding, down for subtracting)
+- {"type":"blocks","numbers":[46,27],"op":"+"}  base-ten blocks for both numbers; with "op":"-" it shows the first number, the trade (regrouping) and the taken-away blocks crossed out
+- {"type":"placevalue","number":482}  place value chart
+- {"type":"tenframe","filled":8,"added":5}  (also "crossed" to take away; 20 slots when needed)
+- {"type":"strip","total":"?","parts":[35,18]}  strip diagram (bar model); use "?" for the unknown
+- {"type":"array","rows":3,"cols":4} and {"type":"groups","groups":3,"each":4}  for multiplication and division
+- {"type":"clock","hour":3,"minute":45}
+- {"type":"coins","quarters":2,"dimes":1,"nickels":1,"pennies":3,"dollar":0}
+- {"type":"fraction","parts":4,"shaded":3,"shape":"circle" or "rect"}
+- {"type":"graph","kind":"bar" or "pictograph","labels":["Cats","Dogs"],"values":[4,6],"key":1,"title":"Favorite pets"}
+Any picture can also have a short "caption". Keep numbers small enough to draw (blocks up to about 999, at most 8 jumps, 12 coins of a kind).`;
+
 const KIND = {
   learn: "a first practice sheet right after a new lesson",
   practice: "a daily practice sheet",
   extra: "an extra practice sheet",
   quiz: "a weekly quiz",
-  test: "a monthly test on the whole unit",
+  test: "a monthly test on the last four weeks",
 };
+
+// Texas (TEKS) grades: Prosper ISD and Frisco ISD teach to these standards, and STAAR tests them.
+function teksNote(subject, grade) {
+  if (!isTeks(subject, grade)) return "";
+  return subject === "math"
+    ? `\nThis child goes to school in Texas (Frisco / Prosper ISD), so teach the way Texas classrooms do. Each topic lists its TEKS student expectation; write problems that match it exactly. Use the Texas words and models: strip diagrams, open number lines, base-ten blocks, place value, "compose" and "decompose", and STAAR-style wording. On quizzes and tests, write some problems the way STAAR asks them (pick the number sentence that matches a strip diagram, which statement is true, read the graph).`
+    : `\nThis child goes to school in Texas (Frisco / Prosper ISD), so follow the Texas ELAR TEKS. Each topic lists its TEKS student expectation; write problems that match it. On quizzes and tests, ask some questions the way STAAR reading does (main idea, which detail supports, what a word means in the passage).`;
+}
+
+const pic = (v) => (v && typeof v === "object" && typeof v.type === "string" ? v : null);
 
 // One worksheet, quiz or test. `items` say how many problems to write for each topic, and at what level.
 export async function makeSheet(subject, grade, kind, items, misses) {
   const subj = SUBJECTS[subject].name;
   const len = grade === "K" ? 40 : Math.min(250, 60 + 25 * +grade);
   const total = items.reduce((a, it) => a + it.count, 0);
-  const list = items.map((it, i) => `${i}. "${it.topic.name}" (${gradeLabel(it.topic.grade)}${it.topic.bridge ? ", a preview of next year" : ""}${it.review ? ", review of an earlier week" : ""}): ${it.count} problem${it.count > 1 ? "s" : ""} at level ${it.level} of 3`).join("\n");
+  const list = items.map((it, i) => `${i}. "${it.topic.name}" (${gradeLabel(it.topic.grade)}${it.topic.teks ? ", TEKS " + it.topic.teks : ""}${it.topic.bridge ? ", a preview of next year" : ""}${it.review ? ", review of an earlier week" : ""}): ${it.count} problem${it.count > 1 ? "s" : ""} at level ${it.level} of 3`).join("\n");
   const prompt = `Write ${KIND[kind]} in ${subj} for a child in ${gradeLabel(grade).toLowerCase()} (about ${kidAge(grade)} years old).
 It has ${total} problems on these topics (the number before each topic is its "topic" index):
 ${list}
 
-Levels: 1 = gentle warm-up, 2 = on grade level, 3 = stretch.${kind === "quiz" || kind === "test" ? " This is a check of what the child knows, so make each problem stand on its own, with clear wording and no tricks." : ""}
+Levels: 1 = gentle warm-up, 2 = on grade level, 3 = stretch.${teksNote(subject, grade)}${kind === "quiz" || kind === "test" ? " This is a check of what the child knows, so make each problem stand on its own, with clear wording and no tricks." : ""}
 ${misses.length ? `The child recently missed these, so include similar ideas where they fit:\n${misses.map((m) => "- " + m).join("\n")}\n` : ""}
 Use friendly, everyday topics kids enjoy (pets, sports, baking, space, gardens) and vary them. Keep the reading level right for the age. Do not use real brand names or real people. Order the problems from easier to harder within each topic.
 
@@ -124,9 +148,14 @@ ${SUBJECT_RULES[subject].replace("{len}", len)}
 - "steps" is a worked explanation of 2 to 5 short steps a child can follow, ending with the answer.
 - "hint" is one nudge that does not give the answer away.
 - Double-check every answer before you write it.
-
+${subject === "math" ? `
+Pictures help young kids see the math. ${VISUALS}
+- "picture" (optional) is shown with the question. Include it whenever the question is about something to look at (coins, a clock, a graph, a fraction model, blocks, a strip diagram). Never write "look at the picture" without one, and never let the picture give the answer away.
+- "visual" is shown with the steps in "Show me how": a picture of the solution, like the hops on a number line or the base-ten blocks with the trade. ${grade === "K" || +grade <= 3 ? "Give nearly every problem one, and always one for adding and subtracting." : "Give one whenever a picture makes the idea clearer."}
+- Make the picture's numbers match the problem exactly.
+` : ""}
 Reply with JSON only, in this shape:
-{"passages":[],"problems":[{"topic":0,"passage":-1,"question":"...","type":"choice","choices":["..."],"answer":"...","accept":[],"steps":["..."],"hint":"..."}]}`;
+{"passages":[],"problems":[{"topic":0,"passage":-1,"question":"...","type":"choice","choices":["..."],"answer":"...","accept":[],"steps":["..."],"hint":"..."${subject === "math" ? ',"picture":null,"visual":{"type":"numberline","start":0,"end":20,"jumps":[]}' : ""}}]}`;
   // Streamed because a long test can take a while to write.
   const text = await ask({ messages: [{ role: "user", content: prompt }], effort: "medium", maxTokens: 32000, onText: () => {} });
   const r = parseJson(text);
@@ -146,6 +175,8 @@ Reply with JSON only, in this shape:
         accept: (p.accept || []).map(String),
         steps: p.steps.map(String),
         hint: String(p.hint || p.steps[0] || ""),
+        picture: pic(p.picture),
+        visual: pic(p.visual),
       };
     });
   for (const p of out) {
@@ -163,12 +194,14 @@ export async function makeLesson(t) {
     messages: [{
       role: "user",
       content: `Write a short lesson that introduces a new ${SUBJECTS[t.subject].name} topic to a child in ${gradeLabel(t.grade).toLowerCase()} (about ${kidAge(t.grade)} years old).
-Topic: "${t.name}" (part of the unit "${t.unitTitle}").${t.bridge ? " This is a preview of next year's work, so start gently from what they already know." : ""}
+Topic: "${t.name}" (part of the unit "${t.unitTitle}"${t.teks ? `, TEKS ${t.teks}` : ""}).${t.bridge ? " This is a preview of next year's work, so start gently from what they already know." : ""}${teksNote(t.subject, t.grade)}
 
 Speak to the child directly, warmly and simply, as Pip the owl tutor. Keep the reading level right for the age. Plain text only, no markdown.
-
+${t.subject === "math" ? `
+Show the idea with a picture: give the example a "visual" that draws how to solve it (hops on a number line, base-ten blocks with the trade, a strip diagram, an array, and so on). ${VISUALS}
+` : ""}
 Reply with JSON only, in this shape:
-{"title":"...","intro":"1 or 2 sentences on what we'll learn and why it's useful","points":["2 to 4 short key ideas"],"example":{"problem":"one example problem","steps":["2 to 5 steps that solve it"]},"tip":"one memory trick or tip"}`,
+{"title":"...","intro":"1 or 2 sentences on what we'll learn and why it's useful","points":["2 to 4 short key ideas"],"example":{"problem":"one example problem","steps":["2 to 5 steps that solve it"]${t.subject === "math" ? ',"visual":{"type":"..."}' : ""}},"tip":"one memory trick or tip"}`,
     }],
   });
   const r = parseJson(text);
@@ -177,7 +210,7 @@ Reply with JSON only, in this shape:
     title: String(r.title || t.name),
     intro: String(r.intro),
     points: r.points.map(String).slice(0, 5),
-    example: r.example && r.example.problem ? { problem: String(r.example.problem), steps: (r.example.steps || []).map(String) } : null,
+    example: r.example && r.example.problem ? { problem: String(r.example.problem), steps: (r.example.steps || []).map(String), visual: pic(r.example.visual) } : null,
     tip: String(r.tip || ""),
   };
 }
@@ -203,7 +236,7 @@ export function tutorSystem(kid, t, p, tries) {
   return `You are Pip, a warm, patient owl who tutors kids. You are helping ${kid.name}, who is in ${gradeLabel(kid.grade).toLowerCase()} (about ${kidAge(kid.grade)} years old), with the ${SUBJECTS[t.subject].name} topic "${t.name}".
 ${p.passage ? `\nThe passage on screen:\n${p.passage}\n` : ""}
 The problem on screen:
-${p.question}${p.type === "choice" ? "\nChoices: " + p.choices.join(" | ") : ""}
+${p.question}${p.type === "choice" ? "\nChoices: " + p.choices.join(" | ") : ""}${p.picture ? "\nA picture is shown with it, drawn from: " + JSON.stringify(p.picture) : ""}
 Correct answer (secret, for you only): ${p.answer}
 Worked solution (secret): ${p.steps.join(" / ")}
 What ${kid.name} has answered so far: ${tries.length ? tries.join(", ") : "nothing yet"}
@@ -214,6 +247,7 @@ How to tutor:
 - Don't say the final answer unless the child has tried at least twice and clearly asks you to show it. Even then, walk through it step by step.
 - If an answer they share is wrong, say what part is right first, then point at the mistake kindly.
 - Celebrate effort. Keep the chat about this problem; if they go off topic, steer back gently.
+- Suggest drawing it when that helps: hops on a number line, base-ten blocks (trade a ten for ten ones when you can't take away), or a strip diagram.${isTeks(t.subject, kid.grade) ? "\n- The child learns in Texas (Frisco / Prosper ISD), so use the same words their class does: strip diagram, open number line, compose and decompose, regroup." : ""}
 - Never ask for personal details like their full name, school, address or photos.`;
 }
 

@@ -1,6 +1,6 @@
 // The daily plan. Each course week has five school days:
 // Monday learn the new topic, Tuesday to Thursday practice it (getting harder),
-// Friday a weekly quiz, or a monthly test on the unit when it's the unit's last week.
+// Friday a weekly quiz, or every fourth Friday a monthly test on the last four weeks.
 import { WEEKS, year, topic } from "./course.js";
 
 export const dayType = (week, day) => (day === 0 ? "learn" : day < 4 ? "practice" : week % 4 === 0 ? "test" : "quiz");
@@ -37,12 +37,13 @@ export function sheetPlan(subject, grade, week, day, peek) {
   if (type === "learn") return { type, items: [{ topic: cur, count: 5, level: 1 }, ...reviewTopics(subject, grade, week, 1, peek).map((t) => ({ topic: t, count: 1, level: 2, review: true }))] };
   if (type === "practice") return { type, items: [{ topic: cur, count: 5, level: practiceLevel(day, peek(cur.id)) }, ...reviewTopics(subject, grade, week, 1, peek).map((t) => ({ topic: t, count: 1, level: 2, review: true }))] };
   if (type === "quiz") return { type, items: [{ topic: cur, count: 6, level: 2 }, ...reviewTopics(subject, grade, week, 4, peek).map((t) => ({ topic: t, count: 1, level: 2, review: true }))] };
-  const unitTopics = year(subject, grade).filter((t) => t.unit === cur.unit);
+  // Monthly test: the last four weeks' topics, plus review from before them.
+  const month = year(subject, grade).filter((t) => t.week > week - 4 && t.week <= week);
   return {
     type,
     items: [
-      ...unitTopics.map((t) => ({ topic: t, count: 3, level: 2 })),
-      ...reviewTopics(subject, grade, unitTopics[0].week, 3, peek).map((t) => ({ topic: t, count: 1, level: 2, review: true })),
+      ...month.map((t) => ({ topic: t, count: 3, level: 2 })),
+      ...reviewTopics(subject, grade, month[0].week, 3, peek).map((t) => ({ topic: t, count: 1, level: 2, review: true })),
     ],
   };
 }
@@ -74,3 +75,5 @@ export function pace(course, now) {
 }
 
 export const topicOf = topic;
+
+export const monthOf = (week) => Math.ceil(week / 4);

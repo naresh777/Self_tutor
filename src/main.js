@@ -1,6 +1,7 @@
 import "./style.css";
-import { GRADES, SUBJECTS, WEEKS, DAYS, gradeLabel, year, units, topic } from "./course.js";
-import { dayType, TYPE_LABEL, mastery, sheetPlan, extraPlan, advance, isFinished, pace } from "./plan.js";
+import { GRADES, SUBJECTS, WEEKS, DAYS, gradeLabel, year, units, topic, isTeks } from "./course.js";
+import { dayType, TYPE_LABEL, mastery, sheetPlan, extraPlan, advance, isFinished, pace, monthOf } from "./plan.js";
+import { renderVisual } from "./visuals.js";
 import { isCorrect, normText, localProblems } from "./check.js";
 import * as ai from "./ai.js";
 import { family, save, exportJson, importJson, resetFamily } from "./store.js";
@@ -113,7 +114,7 @@ function kidView() {
     today_ = `<div class="row spread"><h2>Week ${pos.week} · ${DAYS[pos.day]}</h2>${typePill(type)}</div>
     <div class="tasks">${SUBJ_IDS.map((s) => {
       const t = year(s, k.grade)[pos.week - 1], d = done[s];
-      const what = type === "test" ? `Unit ${t.unit} test: ${t.unitTitle}` : t.name;
+      const what = type === "test" ? `Month ${monthOf(t.week)} test: weeks ${t.week - 3} to ${t.week}` : t.name;
       return `<div class="task ${d ? "done" : ""}"><span class="dot" style="background:${SUBJECTS[s].color}"></span><div class="tmain"><b>${SUBJECTS[s].name}</b><span>${esc(what)}</span></div>${d ? `<span class="pill good">Done · ${d.score}%</span>` : `<button class="btn primary" data-today="${s}">${type === "learn" ? "Learn" : type === "practice" ? "Practice" : "Start " + (type === "test" ? "test" : "quiz")}</button>`}</div>`;
     }).join("")}</div>
     ${type === "quiz" || type === "test" ? `<p class="small muted">${type === "test" ? "Monthly test: show what you learned this unit. No hints this time, just do your best!" : "Friday quiz: a quick check on this week. No hints, just do your best!"}</p>` : ""}`;
@@ -131,14 +132,14 @@ function courseMap(k, subject, parent) {
   const pos = course(k).pos, peek = peekFor(k.id);
   const tests = testsFor(k, "test").filter((l) => l.subject === subject);
   return `<div class="units">${units(subject, k.grade).map((u) => {
-    const test = tests.filter((l) => l.unit === u.unit).at(-1);
+    const test = tests.filter((l) => u.topics.some((t) => t.week === l.week)).at(-1);
     const current = u.topics.some((t) => t.week === pos.week);
     const reached = u.topics[0].week <= pos.week;
     return `<details class="unit ${reached ? "" : "later"}" ${current ? "open" : ""}><summary><span class="ut">Unit ${u.unit}: ${esc(u.title)}</span>${test ? `<span class="pill ${test.correct / test.total >= 0.8 ? "good" : test.correct / test.total >= 0.6 ? "warn" : "bad"}">Test ${pct(test.correct, test.total)}%</span>` : current ? `<span class="pill focus">Now</span>` : ""}</summary>
     <div class="weeks">${u.topics.map((t) => {
       const p = peek(t.id), st = status(p), here = t.week === pos.week, open = t.week <= pos.week;
       const tag = here ? `<span class="pill focus">This week</span>` : p.attempts ? `<span class="pill ${st.cls}">${st.label}${st.k !== "new" ? " · " + Math.round(mastery(p) * 100) + "%" : ""}</span>` : open ? "" : `<span class="pill">Week ${t.week}</span>`;
-      const inner = `<span class="wk">W${t.week}</span><span class="nm">${esc(t.name)}${t.bridge ? ` <span class="small muted">(${gradeLabel(t.grade)} preview)</span>` : ""}</span>${tag}`;
+      const inner = `<span class="wk">W${t.week}</span><span class="nm">${esc(t.name)}${t.bridge ? ` <span class="small muted">(${gradeLabel(t.grade)} preview)</span>` : ""}${parent && t.teks ? ` <span class="small muted">TEKS ${esc(t.teks)}</span>` : ""}</span>${tag}`;
       return open && !parent ? `<button class="week" data-extra="${t.id}">${inner}</button>` : `<div class="week ${open ? "" : "later"}">${inner}${parent && p.attempts ? `<span class="small muted wkd">${p.correct}/${p.attempts} right overall</span>` : ""}</div>`;
     }).join("")}</div></details>`;
   }).join("")}</div>`;
@@ -182,7 +183,7 @@ const ERR = {
 function sheetView() {
   const k = getKid(view.kid), main = topic(view.topicId);
   const head = header(`<button class="btn ghost" id="quit">${isCheck(view.kind) ? "Stop for now" : "End practice"}</button>`);
-  const title = view.kind === "test" ? `Unit ${main.unit} test: ${main.unitTitle}` : main.name;
+  const title = view.kind === "test" ? `Month ${monthOf(main.week)} test: weeks ${main.week - 3} to ${main.week}` : main.name;
   const label = `${SUBJECTS[view.subject].name} · ${TYPE_LABEL[view.kind]}`;
   if (view.state === "loading")
     return head + `<div class="card"><div class="loader">${owl(64, "bob")}<div><h2>${view.kind === "learn" ? "Pip is getting today's lesson ready…" : view.kind === "test" ? "Pip is writing your test…" : view.kind === "quiz" ? "Pip is writing your quiz…" : "Pip is writing your worksheet…"}</h2><p class="muted">${label} · ${esc(title)}. This can take up to a minute${view.kind === "test" ? " or two" : ""}.</p></div></div></div>`;
@@ -198,7 +199,7 @@ function sheetView() {
   const input = p.type === "choice"
     ? `<div class="choices" role="group" aria-label="Choices">${p.choices.map((c, j) => `<button class="choice ${view.sel === j ? "sel" : ""}" data-choice="${j}" ${lock ? "disabled" : ""}>${esc(c)}</button>`).join("")}</div>`
     : `<form class="ans" id="ansform"><input id="ans" type="text" inputmode="${p.type === "number" ? "decimal" : "text"}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Your answer" placeholder="Your answer" ${lock ? "disabled" : ""}><button class="btn primary" type="submit" ${lock ? "disabled" : ""}>${view.checking ? "Checking…" : check ? "Save answer" : "Check"}</button></form>`;
-  const steps = view.shown ? `<div><h3>Step by step</h3><ol class="steps">${p.steps.slice(0, view.shown).map((s) => `<li><span>${esc(s)}</span></li>`).join("")}</ol>${view.shown < p.steps.length ? `<button class="btn" id="morestep" style="margin-top:8px">Show next step</button>` : ""}</div>` : "";
+  const steps = view.shown ? `<div><h3>Step by step</h3>${renderVisual(p.visual)}<ol class="steps">${p.steps.slice(0, view.shown).map((s) => `<li><span>${esc(s)}</span></li>`).join("")}</ol>${view.shown < p.steps.length ? `<button class="btn" id="morestep" style="margin-top:8px">Show next step</button>` : ""}</div>` : "";
   const fb = view.fb ? `<div class="fb ${view.fb.kind === "good" ? "good" : view.fb.kind === "bad" ? "bad" : "info"}" role="status">${esc(view.fb.text)}</div>` : "";
   const help = answered
     ? `<button class="btn primary big" id="next">${view.i + 1 < n ? "Next problem" : "See my results"}</button>`
@@ -216,15 +217,15 @@ function sheetView() {
     <div class="row spread"><span class="pill">${label}</span><div class="dots" aria-label="Problem ${view.i + 1} of ${n}">${dots}</div></div>
     ${passage}
     <p class="small muted">Problem ${view.i + 1} of ${n} · ${esc(t?.name || "")}${t && t.id !== view.topicId && !isCheck(view.kind) ? " (review)" : ""}${view.offline ? " · built-in sheet" : ""}</p>
-    <div class="qrow"><div class="q">${esc(p.question)}</div>${speakBtn("question", "Read the question aloud")}</div>${input}${fb}${steps}${help}</div>${side}</div>`;
+    <div class="qrow"><div class="q">${esc(p.question)}</div>${speakBtn("question", "Read the question aloud")}</div>${renderVisual(p.picture)}${input}${fb}${steps}${help}</div>${side}</div>`;
 }
 
 function lessonHtml(t, L) {
-  return `<div class="card lesson"><div class="row spread"><span class="pill">${SUBJECTS[t.subject].name} · New lesson · Week ${t.week}</span>${speakBtn("lesson", "Read the lesson aloud")}</div>
+  return `<div class="card lesson"><div class="row spread"><span class="pill">${SUBJECTS[t.subject].name} · New lesson · Week ${t.week}${t.teks ? ` · TEKS ${esc(t.teks)}` : ""}</span>${speakBtn("lesson", "Read the lesson aloud")}</div>
   <div class="row">${owl(56)}<h1>${esc(L.title)}</h1></div>
   <p class="lead">${esc(L.intro)}</p>
   <ul class="points">${L.points.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
-  ${L.example ? `<div><h3>Let's try one together</h3><div class="q" style="font-size:1.25rem">${esc(L.example.problem)}</div><ol class="steps" style="margin-top:10px">${L.example.steps.map((s) => `<li><span>${esc(s)}</span></li>`).join("")}</ol></div>` : ""}
+  ${L.example ? `<div><h3>Let's try one together</h3><div class="q" style="font-size:1.25rem">${esc(L.example.problem)}</div>${renderVisual(L.example.visual)}<ol class="steps" style="margin-top:10px">${L.example.steps.map((s) => `<li><span>${esc(s)}</span></li>`).join("")}</ol></div>` : ""}
   ${L.tip ? `<div class="fb info">Pip's tip: ${esc(L.tip)}</div>` : ""}
   <div class="row"><button class="btn primary big" id="topractice">I'm ready to practice</button></div></div>`;
 }
@@ -283,7 +284,7 @@ function finishSheet() {
   const correct = res.filter((x) => x.score >= 1).length;
   family.log.push({
     kid: view.kid, grade: k.grade, subject: view.subject, kind: view.kind, topic: view.topicId, unit: view.unit,
-    week: view.slot?.week, day: view.slot?.day, at: Date.now(), total: res.length, correct, byTopic,
+    week: view.slot?.week, day: view.slot?.day, month: view.slot ? monthOf(view.slot.week) : undefined, at: Date.now(), total: res.length, correct, byTopic,
     mins: Math.max(1, Math.round((Date.now() - view.started) / 60000)),
     misses: view.probs.map((p, j) => ({ q: p.question, a: p.answer, g: res[j].given, t: p.topicId })).filter((_, j) => res[j].score < 1),
   });
@@ -320,7 +321,7 @@ function doneHtml(k, main) {
   <p>${esc(k.name)} got <b>${c} of ${n}</b> right${check ? ` (${score}%) on the ${TYPE_LABEL[view.kind].toLowerCase()}` : " on the first go"}.</p></div></div>
   ${view.dayComplete ? `<div class="fb good">That's all of today's work! +5 bonus stars.</div>` : ""}
   ${topics ? `<div class="row">${topics}</div>` : ""}
-  ${review.length ? `<details ${check ? "open" : ""}><summary>${check ? "Let's look at the ones you missed" : "Problems to look at again"}</summary><div class="review">${review.map(({ p, r }) => `<div class="rv"><p><b>${esc(p.question)}</b></p><p class="small">You answered: ${esc(r.given || "(no answer)")} · Answer: <b>${esc(p.answer)}</b></p><ol class="steps">${p.steps.map((s) => `<li><span>${esc(s)}</span></li>`).join("")}</ol></div>`).join("")}</div></details>` : ""}
+  ${review.length ? `<details ${check ? "open" : ""}><summary>${check ? "Let's look at the ones you missed" : "Problems to look at again"}</summary><div class="review">${review.map(({ p, r }) => `<div class="rv"><p><b>${esc(p.question)}</b></p>${renderVisual(p.picture)}<p class="small">You answered: ${esc(r.given || "(no answer)")} · Answer: <b>${esc(p.answer)}</b></p>${renderVisual(p.visual)}<ol class="steps">${p.steps.map((s) => `<li><span>${esc(s)}</span></li>`).join("")}</ol></div>`).join("")}</div></details>` : ""}
   <div class="row">${otherLeft ? `<button class="btn primary big" data-today="${other}">Now ${SUBJECTS[other].name}</button>` : ""}${view.kind === "extra" ? `<button class="btn primary big" data-extra="${view.topicId}">Another sheet</button>` : ""}<button class="btn ${otherLeft || view.kind === "extra" ? "" : "primary big"}" data-kid="${k.id}" data-ksub="${view.subject}">Back to my page</button></div></div>`;
 }
 
@@ -373,13 +374,14 @@ function parentView() {
   const days = new Set(LW.map((l) => dayKey(l.at))).size;
   const tests = testsFor(kid, "test"), quizzes = testsFor(kid, "quiz");
   const scoreCell = (l) => (l ? `<span class="pill ${l.correct / l.total >= 0.8 ? "good" : l.correct / l.total >= 0.6 ? "warn" : "bad"}">${pct(l.correct, l.total)}%</span> <span class="small muted">${fmtDate(l.at)}</span>` : `<span class="muted small">–</span>`);
-  const unitRows = units("math", kid.grade).filter((u) => tests.some((l) => l.unit === u.unit));
+  const testMonths = [...new Set(tests.filter((l) => l.week).map((l) => monthOf(l.week)))].sort((a, b) => a - b);
+  const bridge = year("math", kid.grade).filter((t) => t.bridge);
   const quizWeeks = [...new Set(quizzes.map((l) => l.week))].sort((a, b) => b - a).slice(0, 8);
   const review = needsReview(kid);
   return header(right) + aiBanner(true) + `
   <div class="tabs" role="tablist">${kids.map((k) => `<button class="tab ${k.id === kid.id ? "on" : ""}" data-pk="${k.id}" role="tab" aria-selected="${k.id === kid.id}">${avatar(k, true)}${esc(k.name)}</button>`).join("")}</div>
   <div class="card"><div class="row spread"><h2>${esc(kid.name)}'s ${gradeLabel(kid.grade)} year</h2>${isFinished(pos) ? `<span class="pill good">Year complete</span>` : `<span class="pill ${pc.cls}">${pc.label}</span>`}</div>
-  <p>${isFinished(pos) ? "Every week of the course is done." : `Now on <b>week ${pos.week} of ${WEEKS}</b>, ${DAYS[pos.day]}: Math "${esc(year("math", kid.grade)[pos.week - 1].name)}" and English "${esc(year("english", kid.grade)[pos.week - 1].name)}".`} Course started ${fmtDate(c.start + "T00:00:00")}. Weeks 33 to 36 ${kid.grade === "8" ? "review the whole year" : `preview ${gradeLabel(String(kid.grade === "K" ? 1 : +kid.grade + 1))}`}.</p>
+  <p>${isFinished(pos) ? "Every week of the course is done." : `Now on <b>week ${pos.week} of ${WEEKS}</b>, ${DAYS[pos.day]}: Math "${esc(year("math", kid.grade)[pos.week - 1].name)}" and English "${esc(year("english", kid.grade)[pos.week - 1].name)}".`} Course started ${fmtDate(c.start + "T00:00:00")}. ${kid.grade === "8" ? "The last weeks review the whole year" : bridge.length ? `Weeks ${bridge[0].week} to ${WEEKS} of math get ready for ${gradeLabel(bridge[0].grade)}` : ""}.${isTeks("math", kid.grade) ? ` Math and English follow the Texas TEKS in the order Frisco ISD teaches them.` : ""}</p>
   <div class="goalbar"><i style="width:${Math.min(100, pct((pos.week - 1) * 5 + pos.day, WEEKS * 5))}%"></i></div>
   <div class="stats">
     <div class="stat"><div class="n">${days}/7</div><div class="l">Days practiced this week</div></div>
@@ -391,7 +393,7 @@ function parentView() {
   <div class="row spread"><h3>Progress note from Pip</h3>${ai.aiReady() ? `<button class="btn" id="report" ${view.reporting ? "disabled" : ""}>${view.reporting ? "Writing…" : "Write a progress note"}</button>` : ""}</div>
   ${view.report && view.report.kid === kid.id ? `<div class="note">${esc(view.report.text)}</div>` : `<p class="muted small">${ai.aiReady() ? "Pip reads the course progress, test scores and missed problems, and writes a short summary with what to do next." : "Available once your Claude API key is added."}</p>`}
   </div>
-  <div class="card"><h2>Monthly tests</h2>${unitRows.length ? `<div class="tablewrap"><table><thead><tr><th>Unit</th>${SUBJ_IDS.map((s) => `<th>${SUBJECTS[s].name}</th>`).join("")}</tr></thead><tbody>${units("math", kid.grade).filter((u) => tests.some((l) => l.unit === u.unit)).map((u) => `<tr><td>Unit ${u.unit}</td>${SUBJ_IDS.map((s) => `<td>${scoreCell(tests.filter((l) => l.unit === u.unit && l.subject === s).at(-1))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted">The first monthly test comes at the end of week 4. Scores for every unit show up here.</p>`}
+  <div class="card"><h2>Monthly tests</h2>${testMonths.length ? `<div class="tablewrap"><table><thead><tr><th>Month</th>${SUBJ_IDS.map((s) => `<th>${SUBJECTS[s].name}</th>`).join("")}</tr></thead><tbody>${testMonths.map((m) => `<tr><td>Month ${m} <span class="small muted">(weeks ${m * 4 - 3} to ${m * 4})</span></td>${SUBJ_IDS.map((s) => `<td>${scoreCell(tests.filter((l) => l.week && monthOf(l.week) === m && l.subject === s).at(-1))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted">The first monthly test comes at the end of week 4. Each test covers the last four weeks, and scores for every month show up here.</p>`}
   <h3>Weekly quizzes</h3>${quizWeeks.length ? `<div class="tablewrap"><table><thead><tr><th>Week</th>${SUBJ_IDS.map((s) => `<th>${SUBJECTS[s].name}</th>`).join("")}</tr></thead><tbody>${quizWeeks.map((w) => `<tr><td>Week ${w}</td>${SUBJ_IDS.map((s) => `<td>${scoreCell(quizzes.filter((l) => l.week === w && l.subject === s).at(-1))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted small">Friday quizzes show up here.</p>`}</div>
   <div class="card"><div class="row spread"><h2>Course map</h2><span class="muted small">How each week's topic is going</span></div>${subjectTabs(subject, "data-psub")}${courseMap(kid, subject, true)}</div>
   <div class="card"><h2>Course settings for ${esc(kid.name)}</h2>
@@ -412,7 +414,7 @@ async function writeReport(kid) {
   const c = course(kid), pos = c.pos, peek = peekFor(kid.id);
   const lines = SUBJ_IDS.map((s) => `${SUBJECTS[s].name} (weeks so far):\n` + year(s, kid.grade).filter((t) => t.week <= pos.week).map((t) => { const p = peek(t.id); return `- Week ${t.week}, ${t.name}: ${p.attempts ? `${status(p).label}, ${Math.round(mastery(p) * 100)}% on last ${p.recent.length}` : "no practice yet"}`; }).join("\n")).join("\n\n");
   const checks = kidLog(kid.id).filter((l) => isCheck(l.kind)).slice(-12).map((l) => `- ${new Date(l.at).toDateString()}: ${SUBJECTS[l.subject].name} ${TYPE_LABEL[l.kind].toLowerCase()}${l.kind === "test" ? " for unit " + l.unit : " for week " + l.week}: ${l.correct}/${l.total}${(l.misses || []).length ? "; missed: " + l.misses.slice(0, 5).map((m) => `"${m.q}" (answered ${m.g || "nothing"}, correct ${m.a})`).join("; ") : ""}`).join("\n");
-  const prompt = `Write a short progress note for a parent about their child's school-year course in math and English. Child: ${kid.name}, ${gradeLabel(kid.grade)}. The course is 36 weeks; the child is on week ${pos.week}, and pacing is: ${pace(c).label}.
+  const prompt = `Write a short progress note for a parent about their child's school-year course in math and English. Child: ${kid.name}, ${gradeLabel(kid.grade)}. The course is 36 weeks; the child is on week ${pos.week}, and pacing is: ${pace(c).label}.${isTeks("math", kid.grade) ? " The course follows the Texas TEKS in Frisco ISD's order, so mention TEKS skills where they help." : ""}
 
 Topic progress:
 ${lines}

@@ -6,7 +6,11 @@ It's a web app you install on an iPad or Android tablet from the browser, so it 
 
 ## What's inside
 
-**A full school year for each grade, K–8, in Math and English.** Each course has 36 weeks: 8 units of 4 weekly topics, then a 4-week unit that previews next year's grade (Grade 8 reviews its own year instead). Topics follow common US grade-level standards. For example, Grade 2 math runs from addition facts and place value to 1,000 through money, time, measurement and fractions, and ends with Grade 3 previews of multiplication, division, rounding and fractions.
+**A full school year for each grade, K–8, in Math and English.** Each course has 36 weeks of weekly topics, grouped into units, and ends with a few weeks that get kids ready for next year's grade (Grade 8 reviews its own year instead).
+
+**Texas TEKS for Grades 2 and 3 (Prosper ISD and Frisco ISD).** Grade 2 and Grade 3 math follow the Texas Essential Knowledge and Skills in the order Frisco ISD's 2025-26 scope and sequence teaches them (Prosper ISD teaches the same TEKS). Grade 2 runs from fact strategies and numbers to 1,200 through adding and subtracting to 1,000, data, money, geometry, fractions, time, measurement and personal financial literacy, and ends with three weeks of Grade 3 readiness. English follows the ELAR TEKS (§110.4 and §110.5). Each topic carries its TEKS code, which shows in lessons and in the parent course map, and Pip writes STAAR-style questions on quizzes and tests. Other grades follow common US grade-level standards.
+
+**Pictures that show the math.** Lessons, questions and "Show me how" steps come with drawn models: open number lines with hops for adding and subtracting, base-ten blocks (with the "trade 1 ten for 10 ones" step for subtraction), ten frames, strip diagrams, place value charts, arrays and equal groups, clocks, coins, fraction models and bar graphs. They're drawn on the device, so they look sharp and work in light and dark mode.
 
 **A plan for every school day.** Each week follows the same rhythm, for both subjects:
 
@@ -15,7 +19,7 @@ It's a web app you install on an iPad or Android tablet from the browser, so it 
 | Monday | **New lesson**: a short lesson from Pip with a worked example, then a first practice sheet |
 | Tuesday to Thursday | **Practice** sheets that get harder through the week |
 | Friday | **Weekly quiz** on the week's topic, plus review |
-| Friday of every 4th week | **Monthly test** on the whole unit, plus review of earlier units |
+| Friday of every 4th week | **Monthly test** on the last four weeks, plus review of earlier weeks |
 
 Every sheet also mixes in problems from earlier weeks, with weaker topics coming back more often, so skills don't fade. Quizzes and tests have no hints. At the end, kids see their score and how to solve each problem they missed.
 
@@ -68,7 +72,7 @@ Set a monthly spend limit in the Anthropic Console so costs stay predictable. Yo
 ```bash
 npm install
 npm run dev      # local dev server
-npm test         # course, plan, answer-checker and generator tests
+npm test         # course, plan, answer-checker, generator and picture tests
 npm run build    # production build in dist/
 ```
 
@@ -76,10 +80,11 @@ Code layout:
 
 | File | What it does |
 |---|---|
-| `src/course.js` | The 36-week course for each grade and subject |
+| `src/course.js` | The 36-week course for each grade and subject, with TEKS codes for Grades 2 and 3 |
 | `src/plan.js` | The daily plan, review mixing and pacing |
 | `src/ai.js` | Claude calls: lessons, worksheets, quizzes, tests, answer checks, tutor chat, progress notes |
 | `src/check.js` | Answer matching and the built-in number-fact sheets |
+| `src/visuals.js` | Draws the math pictures (number lines, base-ten blocks, strip diagrams and more) from small JSON specs |
 | `src/store.js` | Saving family data on the device, backup and restore |
 | `src/main.js` | Screens and interactions |
 | `public/sw.js` | Offline support for the installed app |
