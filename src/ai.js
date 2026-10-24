@@ -153,6 +153,7 @@ Pictures help young kids see the math. ${VISUALS}
 - "picture" (optional) is shown with the question. Include it whenever the question is about something to look at (coins, a clock, a graph, a fraction model, blocks, a strip diagram). Never write "look at the picture" without one, and never let the picture give the answer away.
 - "visual" is shown with the steps in "Show me how": a picture of the solution, like the hops on a number line or the base-ten blocks with the trade. ${grade === "K" || +grade <= 3 ? "Give nearly every problem one, and always one for adding and subtracting." : "Give one whenever a picture makes the idea clearer."}
 - Make the picture's numbers match the problem exactly.
+- For one-digit adding and subtracting (facts to 20), draw one direct hop on the number line, not a split through 10: 4 + 7 is one hop of +7 from 4 to 11, and 13 − 5 is one hop of −5 from 13 to 8. Write the steps the same way (start at 4, jump 7, land on 11).
 ` : ""}
 Reply with JSON only, in this shape:
 {"passages":[],"problems":[{"topic":0,"passage":-1,"question":"...","type":"choice","choices":["..."],"answer":"...","accept":[],"steps":["..."],"hint":"..."${subject === "math" ? ',"picture":null,"visual":{"type":"numberline","start":0,"end":20,"jumps":[]}' : ""}}]}`;
@@ -198,7 +199,7 @@ Topic: "${t.name}" (part of the unit "${t.unitTitle}"${t.teks ? `, TEKS ${t.teks
 
 Speak to the child directly, warmly and simply, as Pip the owl tutor. Keep the reading level right for the age. Plain text only, no markdown.
 ${t.subject === "math" ? `
-Show the idea with a picture: give the example a "visual" that draws how to solve it (hops on a number line, base-ten blocks with the trade, a strip diagram, an array, and so on). ${VISUALS}
+For one-digit adding and subtracting (facts to 20), the example draws one direct hop on the number line, not a split through 10: 4 + 7 is one hop of +7 from 4 to 11, and 13 − 5 is one hop of −5 from 13 to 8. Write the steps the same way (start at 4, jump 7, land on 11). Show the idea with a picture: give the example a "visual" that draws how to solve it (hops on a number line, base-ten blocks with the trade, a strip diagram, an array, and so on). ${VISUALS}
 ` : ""}
 Reply with JSON only, in this shape:
 {"title":"...","intro":"1 or 2 sentences on what we'll learn and why it's useful","points":["2 to 4 short key ideas"],"example":{"problem":"one example problem","steps":["2 to 5 steps that solve it"]${t.subject === "math" ? ',"visual":{"type":"..."}' : ""}},"tip":"one memory trick or tip"}`,
@@ -247,6 +248,7 @@ How to tutor:
 - Don't say the final answer unless the child has tried at least twice and clearly asks you to show it. Even then, walk through it step by step.
 - If an answer they share is wrong, say what part is right first, then point at the mistake kindly.
 - Celebrate effort. Keep the chat about this problem; if they go off topic, steer back gently.
+- For one-digit facts, guide with one direct hop on a number line (4 + 7: start at 4, jump 7, land on 11).
 - Suggest drawing it when that helps: hops on a number line, base-ten blocks (trade a ten for ten ones when you can't take away), or a strip diagram.${isTeks(t.subject, kid.grade) ? "\n- The child learns in Texas (Frisco / Prosper ISD), so use the same words their class does: strip diagram, open number line, compose and decompose, regroup." : ""}
 - Never ask for personal details like their full name, school, address or photos.`;
 }
