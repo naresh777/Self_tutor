@@ -308,6 +308,7 @@ function polygon(v) {
     trapezoid: [[0.35, 0.1], [1.05, 0.1], [1.4, 0.9], [0, 0.9]],
     kite: [[0.6, 0], [1.05, 0.35], [0.6, 1], [0.15, 0.35]],
   }[kind] || (n ? Array.from({ length: n }, (_, i) => { const a = (i / n) * Math.PI * 2 - Math.PI / 2 + (n % 2 ? 0 : Math.PI / n); return [0.6 + 0.6 * Math.cos(a), 0.55 + 0.5 * Math.sin(a)]; }) : null);
+  if (kind === "circle") return svg(260, 200, `<circle cx="110" cy="100" r="78" class="shape"/>`, "circle");
   if (!pts) return "";
   const S = 150, P = pts.map(([x, y]) => [20 + x * S, 20 + y * S]);
   let out = `<polygon points="${P.map((p) => p.join(",")).join(" ")}" class="shape"/>`;
@@ -356,7 +357,84 @@ function table(v) {
   return svg(20 + cols * cw, 20 + rows.length * rh, out, v.title || "Table");
 }
 
-const DRAW = { ruler, area, polygon, solid, fractionline, table, numberline, blocks, tenframe, strip, bar: strip, barmodel: strip, array, groups, clock, coins, fraction, graph, placevalue };
+/* ---------- pictures of things to count (emoji in rows of five) ---------- */
+const emo = (e) => String(e ?? "").slice(0, 8);
+function objects(v) {
+  const gs = (Array.isArray(v.groups) ? v.groups : []).slice(0, 3).map((g) => ({ e: emo(g.emoji) || "●", n: int(g.n, 0, 20) ?? 0, x: int(g.crossed, 0, 20) ?? 0 }));
+  if (!gs.length || !gs.some((g) => g.n)) return "";
+  const per = 5, u = 44, gap = gs.length > 1 ? 44 : 0;
+  let x = 10, out = "", H = 0;
+  gs.forEach((g, gi) => {
+    const cols = Math.min(per, Math.max(1, g.n)), rows = Math.ceil(g.n / per);
+    for (let k = 0; k < g.n; k++) {
+      const cx = x + (k % per) * u + u / 2, cy = 10 + Math.floor(k / per) * u + u / 2;
+      out += text(cx, cy + 12, g.e, "emo");
+      if (k >= g.n - g.x) out += `<path d="M${cx - 16} ${cy - 16} L${cx + 16} ${cy + 16} M${cx + 16} ${cy - 16} L${cx - 16} ${cy + 16}" class="cross" stroke-width="4"/>`;
+    }
+    H = Math.max(H, rows * u);
+    x += cols * u;
+    if (gi < gs.length - 1) { if (v.op) out += text(x + gap / 2, 10 + u / 2 + 10, v.op === "-" ? "−" : String(v.op).slice(0, 1), "op"); x += gap; }
+  });
+  return svg(x + 10, H + 20, out, gs.map((g) => `${g.n} ${g.e}`).join(" and "));
+}
+
+/* ---------- comparing lengths, with optional unit cubes ---------- */
+function lengths(v) {
+  const items = (Array.isArray(v.items) ? v.items : []).slice(0, 4).map((t) => ({ l: String(t.label ?? "").slice(0, 12), n: int(t.len, 1, 15) ?? 0 })).filter((t) => t.n);
+  if (!items.length) return "";
+  const max = Math.max(...items.map((t) => t.n)), lw = 90, u = Math.min(40, Math.floor(440 / max)), rh = 56;
+  let out = "";
+  items.forEach((t, i) => {
+    const y = 10 + i * rh;
+    out += /^[A-Za-z]/.test(t.l) ? text(lw - 10, y + 30, t.l, "lbl", "end") : text(lw - 12, y + 34, t.l, "emo sm", "end") + `<rect x="${lw}" y="${y + 10}" width="${t.n * u}" height="28" rx="6" class="${i % 2 ? "part2" : "part1"}"/>`;
+    if (v.units) for (let k = 0; k < t.n; k++) out += `<rect x="${lw + k * u + 2}" y="${y + 40}" width="${u - 4}" height="12" rx="2" class="b-t"/>`;
+  });
+  out += `<line x1="${lw}" y1="4" x2="${lw}" y2="${items.length * rh + 10}" class="guide"/>`;
+  return svg(lw + max * u + 20, items.length * rh + 16, out, "Lengths to compare");
+}
+
+/* ---------- hundred chart with hidden or shaded numbers ---------- */
+function hundred(v) {
+  const start = int(v.start, 1, 111) ?? 1, rows = int(v.rows, 1, 10) ?? 10;
+  const ask = new Set((Array.isArray(v.ask) ? v.ask : []).map(Number)), shade = new Set((Array.isArray(v.shade) ? v.shade : []).map(Number));
+  const c = 44;
+  let out = "";
+  for (let i = 0; i < rows * 10; i++) {
+    const n = start + i, x = 10 + (i % 10) * c, y = 10 + Math.floor(i / 10) * c;
+    if (n > 120) break;
+    out += `<rect x="${x}" y="${y}" width="${c}" height="${c}" class="${ask.has(n) ? "part-q" : shade.has(n) ? "part2" : "cell"}"/>` + text(x + c / 2, y + 28, ask.has(n) ? "?" : n, ask.has(n) ? "lbl big" : "lbl sm");
+  }
+  return svg(20 + 10 * c, 20 + rows * c, out, "Hundred chart");
+}
+
+/* ---------- tally chart ---------- */
+function tally(v) {
+  const labels = (Array.isArray(v.labels) ? v.labels : []).slice(0, 5).map(String);
+  const vals = (Array.isArray(v.values) ? v.values : []).slice(0, labels.length).map((x) => int(x, 0, 20) ?? 0);
+  if (!labels.length || vals.length !== labels.length) return "";
+  const rh = 46, y0 = v.title ? 34 : 10;
+  let out = v.title ? text(200, 22, v.title, "lbl") : "";
+  labels.forEach((l, i) => {
+    const y = y0 + i * rh;
+    out += `<rect x="10" y="${y}" width="130" height="${rh}" class="pv-h"/><rect x="140" y="${y}" width="260" height="${rh}" class="cell"/>` + text(75, y + 29, l, "lbl sm");
+    for (let k = 0; k < vals[i]; k++) {
+      const grp = Math.floor(k / 5), j = k % 5, gx = 156 + grp * 52;
+      out += j < 4 ? `<line x1="${gx + j * 9}" y1="${y + 10}" x2="${gx + j * 9}" y2="${y + 36}" class="ink" stroke-width="3"/>` : `<line x1="${gx - 5}" y1="${y + 32}" x2="${gx + 33}" y2="${y + 14}" class="ink" stroke-width="3"/>`;
+    }
+  });
+  return svg(410, y0 + labels.length * rh + 10, out, v.title || "Tally chart");
+}
+
+/* ---------- where one thing is next to another ---------- */
+function position(v) {
+  const where = { above: [0, -1], below: [0, 1], beside: [1, 0], "next to": [1, 0], left: [-1, 0], right: [1, 0] }[v.where];
+  if (!where) return "";
+  const cx = 150, cy = 110, d = 78;
+  const out = text(cx, cy + 22, emo(v.ref) || "📦", "emo big") + text(cx + where[0] * d, cy + where[1] * d + 14, emo(v.thing) || "⚽", "emo");
+  return svg(300, 220, out, `One thing ${v.where} another`);
+}
+
+const DRAW = { objects, lengths, hundred, tally, position, ruler, area, polygon, solid, fractionline, table, numberline, blocks, tenframe, strip, bar: strip, barmodel: strip, array, groups, clock, coins, fraction, graph, placevalue };
 
 export function renderVisual(v) {
   if (!v || typeof v !== "object" || !DRAW[v.type]) return "";

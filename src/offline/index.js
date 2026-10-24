@@ -3,17 +3,23 @@
 import { pick, shuffle, choice } from "./util.js";
 import { gen as mathGen } from "./math.js";
 import { EN } from "./english.js";
-import { PASSAGES } from "./passages.js";
+import { PASSAGES as LATER } from "./passages.js";
+import { EARLY_PASSAGES } from "./passages-early.js";
+import { EN_EARLY } from "./english-early.js";
 import { LESSONS } from "./lessons.js";
 
+const PASSAGES = [...EARLY_PASSAGES, ...LATER];
+const EN_ALL = { ...EN, ...EN_EARLY };
 const recent = [];
 // Questions from passages that practice these skills, sharing as few passages as possible.
 function readSet(skills, count, grade) {
-  const g = Number(grade) || 2;
-  const score = (p) => p.qs.filter((q) => q[0].some((k) => skills.includes(k))).length * 3 + (p.grade === g ? 4 : 0) - (recent.includes(p.title) ? 6 : 0) + Math.random() * 3;
-  const pool = PASSAGES.filter((p) => p.qs.some((q) => q[0].some((k) => skills.includes(k)))).sort((a, b) => score(b) - score(a));
+  // Kindergarten is grade 0. Passages more than a grade above the child are left out.
+  const g = grade === "K" ? 0 : Number(grade) || 2;
+  const near = PASSAGES.filter((p) => p.grade <= g + 1);
+  const score = (p) => p.qs.filter((q) => q[0].some((k) => skills.includes(k))).length * 3 - Math.abs(p.grade - g) * 3 - (recent.includes(p.title) ? 6 : 0) + Math.random() * 3;
+  const pool = near.filter((p) => p.qs.some((q) => q[0].some((k) => skills.includes(k)))).sort((a, b) => score(b) - score(a));
   const out = [];
-  for (const p of pool.length ? pool : PASSAGES) {
+  for (const p of pool.length ? pool : near) {
     if (out.length >= count) break;
     recent.push(p.title); if (recent.length > 6) recent.shift();
     const match = shuffle(p.qs.filter((q) => q[0].some((k) => skills.includes(k))));
@@ -29,7 +35,7 @@ export function one(op, lvl, grade) {
   if (op.startsWith("mix:")) return one(pick(op.slice(4).split("+")), lvl, grade);
   if (op.startsWith("read:")) return readSet(op.slice(5).split(","), 1, grade)[0];
   if (op.startsWith("w:")) return EN.write(lvl, op.slice(2));
-  if (op.startsWith("e:")) { const [name, arg] = op.slice(2).split(":"); return EN[name](lvl, arg); }
+  if (op.startsWith("e:")) { const [name, arg] = op.slice(2).split(":"); return EN_ALL[name](lvl, arg); }
   return mathGen(op, lvl);
 }
 

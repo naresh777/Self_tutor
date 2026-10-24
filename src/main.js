@@ -449,7 +449,7 @@ function setupView() {
   ${addKidForm()}
   </div>
   <div class="card"><h2>Pip's brain (Claude)</h2>
-  <p class="muted small">Grades 2 and 3 have a built-in course that works with no key and no internet. With a Claude key, Pip also chats with your child, writes progress notes and makes fresh lessons and problems. Create an API key at <code>console.anthropic.com</code> → API keys, and set a monthly spend limit there. The key is saved only on this device and is sent only to Anthropic.</p>
+  <p class="muted small">Kindergarten through Grade 3 have a built-in course that works with no key and no internet. With a Claude key, Pip also chats with your child, writes progress notes and makes fresh lessons and problems. Create an API key at <code>console.anthropic.com</code> → API keys, and set a monthly spend limit there. The key is saved only on this device and is sent only to Anthropic.</p>
   <form id="aiform" class="row" style="align-items:flex-end">
     <label class="f" style="flex:1 1 260px">API key<input type="password" id="apikey" autocomplete="off" placeholder="${s.key ? "Saved (" + esc(s.key.slice(0, 10)) + "…). Paste to replace" : "sk-ant-…"}"></label>
     <label class="f">Model<select id="model">${ai.MODELS.map((m) => `<option value="${m.id}" ${m.id === s.model ? "selected" : ""}>${m.label}</option>`).join("")}</select></label>

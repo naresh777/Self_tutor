@@ -3,6 +3,7 @@
 // and returns one problem. The op names are set on the topics in course.js ("name|op:arg#TEKS").
 import { rnd, pick, shuffle, sample, fmt, num, choice, word, NAMES } from "./util.js";
 import { localOne } from "../check.js";
+import { EARLY } from "./math-early.js";
 
 const sign = (a, b) => (a > b ? ">" : a < b ? "<" : "=");
 const CMP = [">", "<", "="];
@@ -112,7 +113,7 @@ G.compose = (lvl) => {
   return choice(`Which is another way to make ${fmt(n)}?`, right, [`${P.h - 1} hundreds, ${P.t} tens, ${P.o} ones`, `${P.h} hundreds, ${P.t + 10} tens, ${P.o} ones`, `${P.h - 1} hundreds, ${P.t + 1} tens, ${P.o} ones`], [`1 hundred is the same as 10 tens.`, `Trade 1 hundred for 10 tens: ${right}.`], { visual: { type: "blocks", number: n } });
 };
 G.cmp = (lvl, arg) => {
-  const max = +arg || 1200, lo = max > 2000 ? 10000 : 100;
+  const max = +arg || 1200, lo = max > 2000 ? 10000 : max > 200 ? 100 : 10;
   const k = rnd(0, 1);
   if (k === 0) {
     const a = rnd(lo, max);
@@ -540,6 +541,7 @@ G.mix = (lvl, arg) => {
 };
 
 // Run one generator by op name ("op" or "op:arg"), falling back to the classic number-fact ones.
+Object.assign(G, EARLY);
 export function gen(opArg, lvl) {
   const i = String(opArg).indexOf(":");
   const op = i < 0 ? opArg : opArg.slice(0, i), arg = i < 0 ? undefined : opArg.slice(i + 1);
