@@ -434,7 +434,57 @@ function position(v) {
   return svg(300, 220, out, `One thing ${v.where} another`);
 }
 
-const DRAW = { objects, lengths, hundred, tally, position, ruler, area, polygon, solid, fractionline, table, numberline, blocks, tenframe, strip, bar: strip, barmodel: strip, array, groups, clock, coins, fraction, graph, placevalue };
+/* ---------- an angle with its arc, labelled in degrees or with "?" ---------- */
+function angle(v) {
+  const d = int(v.deg, 1, 359);
+  if (!d) return "";
+  const parts = (Array.isArray(v.split) ? v.split : []).map((x) => int(x, 1, 359)).filter(Boolean);
+  const cx = 150, cy = 150, R = 120, P = (a, r = R) => [cx + r * Math.cos((-a * Math.PI) / 180), cy + r * Math.sin((-a * Math.PI) / 180)];
+  const ray = (a) => { const [x, y] = P(a); return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" class="ink" stroke-width="3"/><circle cx="${x}" cy="${y}" r="4" class="ink-fill"/>`; };
+  const arc = (a1, a2, r, cls) => { const [x1, y1] = P(a1, r), [x2, y2] = P(a2, r); return `<path d="M${x1} ${y1} A${r} ${r} 0 ${a2 - a1 > 180 ? 1 : 0} 0 ${x2} ${y2}" fill="none" class="${cls}" stroke-width="2.5"/>`; };
+  let out = ray(0) + ray(d), at = 0;
+  if (parts.length > 1 && parts.reduce((a, b) => a + b, 0) === d) {
+    parts.forEach((p, i) => { if (i) out += ray(at); out += arc(at, at + p, 40 + i * 14, i % 2 ? "jump-down" : "jump-up"); const [tx, ty] = P(at + p / 2, 78 + i * 14); out += text(tx, ty + 6, v.ask === i ? "?" : `${p}°`, "lbl sm"); at += p; });
+  } else {
+    out += d === 90 ? `<path d="M${cx + 22} ${cy} L${cx + 22} ${cy - 22} L${cx} ${cy - 22}" fill="none" class="ink" stroke-width="2"/>` : arc(0, d, 40, "jump-up");
+    const [tx, ty] = P(d / 2, 68);
+    if (v.label !== false) out += text(tx, ty + 6, v.ask ? "?" : `${d}°`, "lbl");
+  }
+  out += `<circle cx="${cx}" cy="${cy}" r="4" class="ink-fill"/>`;
+  return svg(300, d > 180 ? 290 : 170, out, `An angle of ${v.ask ? "unknown size" : d + " degrees"}`);
+}
+
+/* ---------- coordinate grid with points (first quadrant or all four) ---------- */
+function coord(v) {
+  const lo = int(v.min, -10, 0) ?? 0, hi = int(v.max, 1, 12) ?? 10, n = hi - lo, u = Math.floor(300 / n), x0 = 30, y0 = 20;
+  const X = (x) => x0 + (x - lo) * u, Y = (y) => y0 + (hi - y) * u;
+  let out = "";
+  for (let i = lo; i <= hi; i++) {
+    out += `<line x1="${X(i)}" y1="${Y(lo)}" x2="${X(i)}" y2="${Y(hi)}" class="grid"/><line x1="${X(lo)}" y1="${Y(i)}" x2="${X(hi)}" y2="${Y(i)}" class="grid"/>`;
+    if (i !== 0 || lo === 0) out += text(X(i), Y(Math.max(lo, 0)) + 16, i, "lbl sm") + (i ? text(X(Math.max(lo, 0)) - 6, Y(i) + 5, i, "lbl sm", "end") : "");
+  }
+  out += `<line x1="${X(lo)}" y1="${Y(0)}" x2="${X(hi)}" y2="${Y(0)}" class="ink" stroke-width="2"/><line x1="${X(0)}" y1="${Y(lo)}" x2="${X(0)}" y2="${Y(hi)}" class="ink" stroke-width="2"/>`;
+  const pts = (Array.isArray(v.points) ? v.points : []).slice(0, 8).map((p) => ({ x: Number(p.x), y: Number(p.y), l: String(p.label ?? "").slice(0, 3) })).filter((p) => p.x >= lo && p.x <= hi && p.y >= lo && p.y <= hi);
+  if (v.line && pts.length > 1) out += `<polyline points="${pts.map((p) => `${X(p.x)},${Y(p.y)}`).join(" ")}" fill="none" class="jump-up" stroke-width="2.5"/>`;
+  if (v.shape && pts.length > 2) out += `<polygon points="${pts.map((p) => `${X(p.x)},${Y(p.y)}`).join(" ")}" class="part1"/>`;
+  pts.forEach((p) => { out += `<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="6" class="mark"/>` + (p.l ? text(X(p.x) + 9, Y(p.y) - 8, p.l, "lbl", "start") : ""); });
+  return svg(x0 + n * u + 30, y0 + n * u + 30, out, "Coordinate grid");
+}
+
+/* ---------- a box made of unit cubes, for volume ---------- */
+function cubes(v) {
+  const l = int(v.l, 1, 10), w = int(v.w, 1, 6), h = int(v.h, 1, 8);
+  if (!l || !w || !h) return "";
+  const u = Math.min(34, Math.floor(300 / (l + w * 0.6))), dx = u * 0.5, dy = u * 0.4, x0 = 10, y0 = 10 + w * dy;
+  let out = "";
+  for (let i = 0; i < h; i++) for (let j = 0; j < l; j++) out += `<rect x="${x0 + j * u}" y="${y0 + i * u}" width="${u}" height="${u}" class="part1"/>`;
+  for (let k = 0; k < w; k++) for (let j = 0; j < l; j++) { const x = x0 + j * u + (w - k - 1) * dx, y = y0 - (w - k) * dy; out += `<path d="M${x} ${y + dy} L${x + dx} ${y} L${x + dx + u} ${y} L${x + u} ${y + dy} Z" class="part2"/>`; }
+  for (let k = 0; k < w; k++) for (let i = 0; i < h; i++) { const x = x0 + l * u + k * dx, y = y0 + i * u - k * dy; out += `<path d="M${x} ${y} L${x + dx} ${y - dy} L${x + dx} ${y - dy + u} L${x} ${y + u} Z" class="b-h"/>`; }
+  if (v.labels) out += text(x0 + (l * u) / 2, y0 + h * u + 22, v.hide === "l" ? "?" : `${l}${v.unit ? " " + String(v.unit).slice(0, 3) : ""}`, "lbl") + text(x0 + l * u + w * dx + 8, y0 + (h * u) / 2 - (w * dy) / 2, v.hide === "h" ? "?" : `${h}`, "lbl", "start") + text(x0 + l * u + (w * dx) / 2 + 10, y0 + h * u - (w * dy) / 2 + 22, v.hide === "w" ? "?" : `${w}`, "lbl sm", "start");
+  return svg(x0 + l * u + w * dx + 50, y0 + h * u + 34, out, `A box ${l} by ${w} by ${h} unit cubes`);
+}
+
+const DRAW = { angle, coord, cubes, objects, lengths, hundred, tally, position, ruler, area, polygon, solid, fractionline, table, numberline, blocks, tenframe, strip, bar: strip, barmodel: strip, array, groups, clock, coins, fraction, graph, placevalue };
 
 export function renderVisual(v) {
   if (!v || typeof v !== "object" || !DRAW[v.type]) return "";
