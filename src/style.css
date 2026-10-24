@@ -205,3 +205,4 @@ label.f{min-width:0;max-width:100%}
 .viz .shape3{fill:var(--teal);fill-opacity:.6;stroke:var(--ink);stroke-width:3;stroke-linejoin:round}
 .viz .dash{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:5 5}
 .viz .dotx{font-size:22px;fill:var(--plum)}
+.viz .emo{font-size:34px}.viz .emo.big{font-size:64px}.viz .emo.sm{font-size:28px}
