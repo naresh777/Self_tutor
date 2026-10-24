@@ -8,10 +8,12 @@ import { EARLY_PASSAGES } from "./passages-early.js";
 import { EN_EARLY } from "./english-early.js";
 import { UPPER_PASSAGES } from "./passages-upper.js";
 import { EN_UPPER } from "./english-upper.js";
+import { MIDDLE_PASSAGES } from "./passages-middle.js";
+import { EN_MIDDLE } from "./english-middle.js";
 import { LESSONS } from "./lessons.js";
 
-const PASSAGES = [...EARLY_PASSAGES, ...LATER, ...UPPER_PASSAGES];
-const EN_ALL = { ...EN, ...EN_EARLY, ...EN_UPPER };
+const PASSAGES = [...EARLY_PASSAGES, ...LATER, ...UPPER_PASSAGES, ...MIDDLE_PASSAGES];
+const EN_ALL = { ...EN, ...EN_EARLY, ...EN_UPPER, ...EN_MIDDLE };
 const recent = [];
 // Questions from passages that practice these skills, sharing as few passages as possible.
 function readSet(skills, count, grade) {
@@ -61,4 +63,6 @@ export function offlineSheet(items, grade) {
   return out;
 }
 
-export const offlineLesson = (t) => LESSONS[t.name] || null;
+// A lesson keyed "subject:grade:name" wins over one keyed by name alone, for names used in more than one course.
+// The grade in the key is the course the week belongs to (from its id), even for a preview of next year.
+export const offlineLesson = (t) => LESSONS[`${String(t.id).split("-").slice(0, 2).join(":")}:${t.name}`] || LESSONS[t.name] || null;

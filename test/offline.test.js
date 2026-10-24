@@ -5,13 +5,13 @@ import { offlineSheet, offlineLesson } from "../src/offline/index.js";
 import { renderVisual } from "../src/visuals.js";
 import { isCorrect } from "../src/check.js";
 
-const topics = () => ["math", "english"].flatMap((s) => ["K", "1", "2", "3", "4", "5"].flatMap((g) => year(s, g).map((t) => [g, t])));
+const topics = () => ["math", "english"].flatMap((s) => ["K", "1", "2", "3", "4", "5", "6", "7", "8"].flatMap((g) => year(s, g).map((t) => [g, t])));
 
-test("every K–5 topic has a built-in problem type", () => {
+test("every K–8 topic has a built-in problem type", () => {
   for (const [g, t] of topics()) assert.ok(t.op, `Grade ${g} week ${t.week}: ${t.name}`);
 });
 
-test("every K–5 topic has a built-in lesson", () => {
+test("every K–8 topic has a built-in lesson", () => {
   for (const [g, t] of topics()) {
     const L = offlineLesson(t);
     assert.ok(L, `no lesson for Grade ${g}: ${t.name}`);
