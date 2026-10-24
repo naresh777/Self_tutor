@@ -219,7 +219,7 @@ function sheetView() {
       ? `<div class="card"><div class="row">${owl(36)}<h3>Ask Pip</h3></div>
     <div class="chat" id="chat">${view.chat.length ? "" : `<div class="msg pipm">Stuck? Tell me what you're thinking, or ask me a question about this problem.</div>`}${view.chat.map((m) => `<div class="msg ${m.role === "user" ? "kidm" : "pipm"}">${esc(m.content)}</div>`).join("")}${view.thinking ? `<div class="msg pipm">Pip is thinking…</div>` : ""}</div>
     <form class="chatform" id="chatform"><input type="text" id="chatin" maxlength="300" placeholder="Type to Pip" aria-label="Message to Pip" ${view.thinking ? "disabled" : ""}><button class="btn" type="submit" ${view.thinking ? "disabled" : ""}>Send</button></form></div>`
-      : `<div class="card"><div class="row">${owl(36)}<h3>Pip's tips</h3></div><p class="muted">Read the problem out loud. Draw a picture or use your fingers. Then check your answer by doing it a second way.</p></div>`;
+      : `<div class="card"><div class="row">${owl(36)}<h3>Pip's tips</h3></div><p class="muted">${["K", "1", "2", "3"].includes(k?.grade) ? "Read the problem out loud. Draw a picture or use your fingers." : "Read the problem twice and underline what it asks. Sketch a diagram or table if it helps."} Then check your answer by doing it a second way.</p></div>`;
   const passage = p.passage ? `<div><div class="row spread"><h3>Read this first</h3>${speakBtn("passage", "Read the passage aloud")}</div><div class="passage">${esc(p.passage)}</div></div>` : "";
   const t = topic(p.topicId);
   return head + `<div class="prac"><div class="card">
@@ -449,7 +449,7 @@ function setupView() {
   ${addKidForm()}
   </div>
   <div class="card"><h2>Pip's brain (Claude)</h2>
-  <p class="muted small">Kindergarten through Grade 5 have a built-in course that works with no key and no internet. With a Claude key, Pip also chats with your child, writes progress notes and makes fresh lessons and problems. Create an API key at <code>console.anthropic.com</code> → API keys, and set a monthly spend limit there. The key is saved only on this device and is sent only to Anthropic.</p>
+  <p class="muted small">Every grade from Kindergarten through Grade 8 has a built-in course that works with no key and no internet. With a Claude key, Pip also chats with your child, writes progress notes and makes fresh lessons and problems. Create an API key at <code>console.anthropic.com</code> → API keys, and set a monthly spend limit there. The key is saved only on this device and is sent only to Anthropic.</p>
   <form id="aiform" class="row" style="align-items:flex-end">
     <label class="f" style="flex:1 1 260px">API key<input type="password" id="apikey" autocomplete="off" placeholder="${s.key ? "Saved (" + esc(s.key.slice(0, 10)) + "…). Paste to replace" : "sk-ant-…"}"></label>
     <label class="f">Model<select id="model">${ai.MODELS.map((m) => `<option value="${m.id}" ${m.id === s.model ? "selected" : ""}>${m.label}</option>`).join("")}</select></label>

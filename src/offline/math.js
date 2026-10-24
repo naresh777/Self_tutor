@@ -5,6 +5,7 @@ import { rnd, pick, shuffle, sample, fmt, num, choice, word, NAMES } from "./uti
 import { localOne } from "../check.js";
 import { EARLY } from "./math-early.js";
 import { UPPER } from "./math-upper.js";
+import { MIDDLE } from "./math-middle.js";
 
 const sign = (a, b) => (a > b ? ">" : a < b ? "<" : "=");
 const CMP = [">", "<", "="];
@@ -542,7 +543,7 @@ G.mix = (lvl, arg) => {
 };
 
 // Run one generator by op name ("op" or "op:arg"), falling back to the classic number-fact ones.
-Object.assign(G, EARLY, UPPER);
+Object.assign(G, EARLY, UPPER, MIDDLE);
 export function gen(opArg, lvl) {
   const i = String(opArg).indexOf(":");
   const op = i < 0 ? opArg : opArg.slice(0, i), arg = i < 0 ? undefined : opArg.slice(i + 1);
