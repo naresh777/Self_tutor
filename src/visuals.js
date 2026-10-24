@@ -9,22 +9,32 @@ const svg = (w, h, body, label) => `<svg class="viz" viewBox="0 0 ${w} ${h}" rol
 const text = (x, y, t, cls = "", anchor = "middle") => `<text x="${x}" y="${y}" text-anchor="${anchor}" class="${cls}">${esc(t)}</text>`;
 
 /* ---------- number line with jumps ---------- */
+// A tick step of 1, 2 or 5 times a power of ten that gives about 10 to 20 ticks.
+function niceStep(span) {
+  for (let p = 1; ; p *= 10) for (const m of [1, 2, 5]) if (span / (m * p) <= 20) return m * p;
+}
 function numberline(v) {
-  let start = int(v.start, -1200, 1200), end = int(v.end, -1200, 1200);
+  const L = 1000000;
+  let start = int(v.start, -L, L), end = int(v.end, -L, L);
   if (start === null || end === null || end <= start) return "";
   const jumps = (Array.isArray(v.jumps) ? v.jumps : []).slice(0, 8).map((j) => ({ from: int(j.from, start, end), to: int(j.to, start, end), label: j.label })).filter((j) => j.from !== null && j.to !== null && j.from !== j.to);
   const marks = (Array.isArray(v.marks) ? v.marks : []).map((m) => int(m, start, end)).filter((m) => m !== null);
+  const ask = v.ask == null ? null : int(v.ask, start, end);
   const W = 640, x0 = 30, x1 = W - 30, H = 120, y = 88;
   const X = (n) => x0 + ((n - start) / (end - start)) * (x1 - x0);
   const span = end - start;
-  const step = span <= 20 ? 1 : span <= 50 ? 5 : span <= 100 ? 10 : span <= 500 ? 50 : 100;
+  const step = int(v.step, 1, L) && span / int(v.step, 1, L) <= 50 ? int(v.step, 1, L) : niceStep(span);
   let out = `<line x1="${x0 - 12}" y1="${y}" x2="${x1 + 12}" y2="${y}" class="ink" stroke-width="2.5"/><path d="M${x1 + 12} ${y - 6} L${x1 + 22} ${y} L${x1 + 12} ${y + 6}" class="ink" fill="none" stroke-width="2.5"/><path d="M${x0 - 12} ${y - 6} L${x0 - 22} ${y} L${x0 - 12} ${y + 6}" class="ink" fill="none" stroke-width="2.5"/>`;
-  const labeled = new Set([start, end, ...jumps.flatMap((j) => [j.from, j.to]), ...marks]);
+  // With a "?" point, only the ends (and any labels asked for) get numbers, so the line doesn't give the answer away.
+  const labeled = new Set(ask !== null ? [start, end, ...(Array.isArray(v.labels) ? v.labels.map((n) => int(n, start, end)).filter((n) => n !== null) : [])] : [start, end, ...jumps.flatMap((j) => [j.from, j.to]), ...marks]);
+  const wide = String(Math.max(Math.abs(start), Math.abs(end))).length > 3;
   for (let n = Math.ceil(start / step) * step; n <= end; n += step) {
     out += `<line x1="${X(n)}" y1="${y - 7}" x2="${X(n)}" y2="${y + 7}" class="ink" stroke-width="1.5"/>`;
-    if (span <= 20 || n % (step * 2) === 0 || labeled.has(n)) labeled.add(n);
+    // Number the tick only if no other number sits too close to it.
+    const room = [...labeled].every((m) => Math.abs(m - n) >= span * (wide ? 0.14 : 0.06));
+    if (ask === null && room && (span / step <= (wide ? 6 : 12) || n % (step * (wide ? 5 : 2)) === 0)) labeled.add(n);
   }
-  for (const n of labeled) out += `<line x1="${X(n)}" y1="${y - 9}" x2="${X(n)}" y2="${y + 9}" class="ink" stroke-width="2"/>` + text(X(n), y + 26, n, "lbl");
+  for (const n of labeled) out += `<line x1="${X(n)}" y1="${y - 9}" x2="${X(n)}" y2="${y + 9}" class="ink" stroke-width="2"/>` + text(X(n), y + 26, n.toLocaleString("en-US"), wide ? "lbl sm" : "lbl");
   jumps.forEach((j, i) => {
     const a = X(j.from), b = X(j.to), up = 26 + (i % 2) * 14, mid = (a + b) / 2;
     const cls = j.to > j.from ? "jump-up" : "jump-down";
@@ -32,6 +42,7 @@ function numberline(v) {
     out += text(mid, y - up - 8, j.label ?? (j.to > j.from ? `+${j.to - j.from}` : `−${j.from - j.to}`), `jl ${cls}-t`);
   });
   for (const m of marks) out += `<circle cx="${X(m)}" cy="${y}" r="7" class="mark"/>`;
+  if (ask !== null) out += `<circle cx="${X(ask)}" cy="${y}" r="8" class="mark"/>` + text(X(ask), y - 18, "?", "lbl big");
   return svg(W, H, out, `Number line from ${start} to ${end}`);
 }
 
@@ -205,8 +216,13 @@ function graph(v) {
   const top = Math.ceil(max / step) * step, Y = (n) => y0 - (n / top) * 160, bw = (W - x0 - 20) / labels.length;
   let out = v.title ? text(W / 2, 18, v.title, "lbl") : "";
   // A pictograph is read by counting pictures with the key, so it gets no number scale.
-  if (v.kind !== "pictograph") for (let n = 0; n <= top; n += step) out += `<line x1="${x0}" y1="${Y(n)}" x2="${W - 10}" y2="${Y(n)}" class="grid"/>` + text(x0 - 8, Y(n) + 4, n, "lbl sm", "end");
-  if (v.kind === "pictograph") {
+  if (v.kind !== "pictograph" && v.kind !== "dot") for (let n = 0; n <= top; n += step) out += `<line x1="${x0}" y1="${Y(n)}" x2="${W - 10}" y2="${Y(n)}" class="grid"/>` + text(x0 - 8, Y(n) + 4, n, "lbl sm", "end");
+  if (v.kind === "dot") {
+    labels.forEach((l, i) => {
+      for (let k = 0; k < vals[i] && k < 12; k++) out += text(x0 + i * bw + bw / 2, y0 - 6 - k * 15, "×", "lbl dotx");
+      out += text(x0 + i * bw + bw / 2, y0 + 20, l, "lbl sm");
+    });
+  } else if (v.kind === "pictograph") {
     labels.forEach((l, i) => {
       const per = int(v.key, 1, 10) || 1;
       for (let k = 0; k < Math.round(vals[i] / per) && k < 12; k++) out += `<circle cx="${x0 + i * bw + bw / 2}" cy="${y0 - 10 - k * 15}" r="6" class="ctr"/>`;
@@ -216,7 +232,7 @@ function graph(v) {
   } else {
     labels.forEach((l, i) => { out += `<rect x="${x0 + i * bw + bw * 0.2}" y="${Y(vals[i])}" width="${bw * 0.6}" height="${y0 - Y(vals[i])}" class="${i % 2 ? "part2" : "part1"}"/>` + text(x0 + i * bw + bw / 2, y0 + 20, l, "lbl sm"); });
   }
-  out += `<line x1="${x0}" y1="${y0}" x2="${W - 10}" y2="${y0}" class="ink" stroke-width="2"/>${v.kind === "pictograph" ? "" : `<line x1="${x0}" y1="${y0}" x2="${x0}" y2="30" class="ink" stroke-width="2"/>`}`;
+  out += `<line x1="${x0}" y1="${y0}" x2="${W - 10}" y2="${y0}" class="ink" stroke-width="2"/>${v.kind === "pictograph" || v.kind === "dot" ? "" : `<line x1="${x0}" y1="${y0}" x2="${x0}" y2="30" class="ink" stroke-width="2"/>`}`;
   return svg(W, H, out, v.title || "Graph");
 }
 
@@ -234,7 +250,113 @@ function placevalue(v) {
   return svg(20 + cols.length * cw, 106, out, `Place value chart for ${n}`);
 }
 
-const DRAW = { numberline, blocks, tenframe, strip, bar: strip, barmodel: strip, array, groups, clock, coins, fraction, graph, placevalue };
+/* ---------- ruler with an object to measure ---------- */
+function ruler(v) {
+  const max = int(v.max, 3, 15) ?? 12, len = Math.max(0.5, Math.min(max, Number(v.length) || 0)), from = Math.max(0, Math.min(max - len, Number(v.start) || 0));
+  if (!len) return "";
+  const W = 620, x0 = 20, u = (W - 40) / max, y = 70;
+  const X = (n) => x0 + n * u;
+  let out = `<rect x="${x0 - 8}" y="${y}" width="${max * u + 16}" height="46" rx="4" class="rulerbody"/>`;
+  for (let i = 0; i <= max * 2; i++) {
+    const n = i / 2, big = i % 2 === 0;
+    out += `<line x1="${X(n)}" y1="${y}" x2="${X(n)}" y2="${y + (big ? 18 : 10)}" class="ink" stroke-width="${big ? 2 : 1}"/>`;
+    if (big) out += text(X(n), y + 36, n, "lbl sm");
+  }
+  const thing = v.object === "ribbon" || v.object === "worm" || v.object === "crayon" ? v.object : "pencil";
+  const x1 = X(from), x2 = X(from + len);
+  out += thing === "pencil"
+    ? `<rect x="${x1}" y="28" width="${Math.max(4, x2 - x1 - 18)}" height="22" rx="3" class="pencil"/><path d="M${x2 - 18} 28 L${x2} 39 L${x2 - 18} 50 Z" class="pencil-tip"/>`
+    : `<rect x="${x1}" y="30" width="${x2 - x1}" height="18" rx="9" class="${thing === "worm" ? "worm" : "ribbon"}"/>`;
+  out += `<line x1="${x1}" y1="54" x2="${x1}" y2="${y}" class="guide"/><line x1="${x2}" y1="54" x2="${x2}" y2="${y}" class="guide"/>`;
+  out += text(W - 16, 18, v.unit === "cm" ? "centimeters" : "inches", "cap", "end");
+  return svg(W, 126, out, `A ruler measuring a ${thing}`);
+}
+
+/* ---------- unit squares, rectangles and L-shapes for area and perimeter ---------- */
+function area(v) {
+  const r = int(v.rows, 1, 12), c = int(v.cols, 1, 14);
+  if (!r || !c) return "";
+  const cut = v.cut ? { r: int(v.cut.rows, 0, r - 1) ?? 0, c: int(v.cut.cols, 0, c - 1) ?? 0 } : { r: 0, c: 0 };
+  const u = Math.min(40, Math.floor(460 / c)), x0 = 50, y0 = 30, grid = v.grid !== false;
+  const inside = (i, j) => !(i < cut.r && j >= c - cut.c);
+  let out = "";
+  for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) if (inside(i, j)) out += `<rect x="${x0 + j * u}" y="${y0 + i * u}" width="${u}" height="${u}" class="${grid ? "sq" : "sq-plain"}"/>`;
+  const W = c * u, H = r * u, cw = cut.c * u, ch = cut.r * u;
+  const outline = cut.r && cut.c
+    ? `M${x0} ${y0} L${x0 + W - cw} ${y0} L${x0 + W - cw} ${y0 + ch} L${x0 + W} ${y0 + ch} L${x0 + W} ${y0 + H} L${x0} ${y0 + H} Z`
+    : `M${x0} ${y0} L${x0 + W} ${y0} L${x0 + W} ${y0 + H} L${x0} ${y0 + H} Z`;
+  out += `<path d="${outline}" class="ink" fill="none" stroke-width="3"/>`;
+  if (v.labels) {
+    const unit = v.unit ? " " + String(v.unit).slice(0, 3) : "";
+    const lab = (n) => (v.hide === n ? "?" : `${n}${unit}`);
+    out += text(x0 + (W - cw) / 2, y0 - 8, lab(c - cut.c), "lbl") + text(x0 - 8, y0 + H / 2 + 6, lab(r), "lbl", "end");
+    out += text(x0 + W / 2, y0 + H + 24, lab(c), "lbl");
+    if (cut.r && cut.c) out += text(x0 + W + 8, y0 + ch + (H - ch) / 2 + 6, lab(r - cut.r), "lbl", "start");
+    else out += text(x0 + W + 8, y0 + H / 2 + 6, lab(r), "lbl", "start");
+  }
+  return svg(x0 + W + 70, y0 + H + 34, out, grid ? `Shape made of unit squares` : `Rectangle`);
+}
+
+/* ---------- flat shapes ---------- */
+function polygon(v) {
+  const kind = String(v.kind || ""), n = int(v.sides, 3, 10);
+  const pts = {
+    square: [[0, 0], [1, 0], [1, 1], [0, 1]],
+    rectangle: [[0, 0.15], [1.4, 0.15], [1.4, 0.95], [0, 0.95]],
+    rhombus: [[0.6, 0], [1.2, 0.5], [0.6, 1], [0, 0.5]],
+    parallelogram: [[0.3, 0.1], [1.4, 0.1], [1.1, 0.9], [0, 0.9]],
+    trapezoid: [[0.35, 0.1], [1.05, 0.1], [1.4, 0.9], [0, 0.9]],
+    kite: [[0.6, 0], [1.05, 0.35], [0.6, 1], [0.15, 0.35]],
+  }[kind] || (n ? Array.from({ length: n }, (_, i) => { const a = (i / n) * Math.PI * 2 - Math.PI / 2 + (n % 2 ? 0 : Math.PI / n); return [0.6 + 0.6 * Math.cos(a), 0.55 + 0.5 * Math.sin(a)]; }) : null);
+  if (!pts) return "";
+  const S = 150, P = pts.map(([x, y]) => [20 + x * S, 20 + y * S]);
+  let out = `<polygon points="${P.map((p) => p.join(",")).join(" ")}" class="shape"/>`;
+  if (v.dots) out += P.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="6" class="mark"/>`).join("");
+  return svg(260, 200, out, kind || `${n}-sided shape`);
+}
+
+/* ---------- solid shapes ---------- */
+function solid(v) {
+  const k = String(v.kind || "");
+  const D = {
+    cube: `<path d="M40 70 L120 70 L120 150 L40 150 Z" class="shape"/><path d="M40 70 L75 40 L155 40 L120 70 Z" class="shape2"/><path d="M120 70 L155 40 L155 120 L120 150 Z" class="shape3"/>`,
+    prism: `<path d="M30 80 L160 80 L160 150 L30 150 Z" class="shape"/><path d="M30 80 L65 50 L195 50 L160 80 Z" class="shape2"/><path d="M160 80 L195 50 L195 120 L160 150 Z" class="shape3"/>`,
+    cylinder: `<path d="M50 50 L50 140 A55 18 0 0 0 160 140 L160 50" class="shape"/><ellipse cx="105" cy="50" rx="55" ry="18" class="shape2"/>`,
+    cone: `<path d="M105 25 L50 140 A55 18 0 0 0 160 140 Z" class="shape"/><path d="M50 140 A55 18 0 0 1 160 140" class="dash" fill="none"/>`,
+    sphere: `<circle cx="105" cy="90" r="65" class="shape"/><ellipse cx="105" cy="90" rx="65" ry="18" class="dash" fill="none"/>`,
+    pyramid: `<path d="M105 25 L40 140 L130 160 Z" class="shape"/><path d="M105 25 L130 160 L175 130 Z" class="shape3"/>`,
+  }[k];
+  return D ? svg(210, 180, D, k) : "";
+}
+
+/* ---------- fractions on a number line ---------- */
+function fractionline(v) {
+  const n = int(v.parts, 2, 12), wholes = int(v.wholes, 1, 3) ?? 1;
+  if (!n) return "";
+  const at = v.at == null ? null : int(v.at, 0, n * wholes);
+  const W = 620, x0 = 30, x1 = W - 30, y = 70, X = (k) => x0 + (k / (n * wholes)) * (x1 - x0);
+  let out = `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" class="ink" stroke-width="2.5"/>`;
+  for (let k = 0; k <= n * wholes; k++) {
+    const whole = k % n === 0;
+    out += `<line x1="${X(k)}" y1="${y - (whole ? 12 : 8)}" x2="${X(k)}" y2="${y + (whole ? 12 : 8)}" class="ink" stroke-width="${whole ? 2.5 : 1.5}"/>`;
+    if (whole) out += text(X(k), y + 34, k / n, "lbl big");
+    else if (v.label_all) out += text(X(k), y + 32, `${k}/${n}`, "lbl sm");
+  }
+  if (at !== null) out += `<circle cx="${X(at)}" cy="${y}" r="8" class="mark"/>` + text(X(at), y - 20, v.ask ? "?" : `${at}/${n}`, "lbl big");
+  return svg(W, 112, out, `Number line from 0 to ${wholes} in ${n} equal parts`);
+}
+
+/* ---------- small tables (frequency tables, input-output tables) ---------- */
+function table(v) {
+  const rows = (Array.isArray(v.rows) ? v.rows : []).slice(0, 8).map((r) => (Array.isArray(r) ? r.slice(0, 7).map((c) => String(c ?? "")) : []));
+  if (rows.length < 2 || !rows[0].length) return "";
+  const cols = rows[0].length, cw = Math.min(150, Math.floor(600 / cols)), rh = 38;
+  let out = "";
+  rows.forEach((r, i) => r.forEach((c, j) => { out += `<rect x="${10 + j * cw}" y="${10 + i * rh}" width="${cw}" height="${rh}" class="${i === 0 ? "pv-h" : "cell"}"/>` + text(10 + j * cw + cw / 2, 10 + i * rh + 25, c, i === 0 ? "lbl sm" : "lbl"); }));
+  return svg(20 + cols * cw, 20 + rows.length * rh, out, v.title || "Table");
+}
+
+const DRAW = { ruler, area, polygon, solid, fractionline, table, numberline, blocks, tenframe, strip, bar: strip, barmodel: strip, array, groups, clock, coins, fraction, graph, placevalue };
 
 export function renderVisual(v) {
   if (!v || typeof v !== "object" || !DRAW[v.type]) return "";

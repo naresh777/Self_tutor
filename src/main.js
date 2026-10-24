@@ -2,8 +2,9 @@ import "./style.css";
 import { GRADES, SUBJECTS, WEEKS, DAYS, gradeLabel, year, units, topic, isTeks } from "./course.js";
 import { dayType, TYPE_LABEL, mastery, sheetPlan, extraPlan, advance, isFinished, pace, monthOf } from "./plan.js";
 import { renderVisual } from "./visuals.js";
-import { isCorrect, normText, localProblems } from "./check.js";
+import { isCorrect, normText } from "./check.js";
 import * as ai from "./ai.js";
+import { offlineSheet, offlineLesson } from "./offline/index.js";
 import { family, save, exportJson, importJson, resetFamily } from "./store.js";
 
 /* ---------------- helpers ---------------- */
@@ -71,7 +72,13 @@ function go(v) { view = v; render(); window.scrollTo({ top: 0 }); }
 const owl = (size = 44, cls = "") => `<svg class="pip ${cls}" style="width:${size}px;height:${size}px" viewBox="0 0 64 64" aria-hidden="true"><use href="#owl"/></svg>`;
 const avatar = (k, sm) => `<span class="av ${sm ? "sm" : ""}" style="background:${k.color}">${esc((k.name || "?").trim()[0]?.toUpperCase() || "?")}</span>`;
 const header = (right = "") => `<div class="top"><button class="brand" data-go="home" aria-label="Pip Tutor home">${owl(46)}<span><b>Pip Tutor</b><small>Math and English for our family</small></span></button><div class="row">${right}</div></div>`;
-const aiBanner = (parent) => (ai.aiReady() ? "" : `<div class="banner">${parent ? "Add your Claude API key in Family settings to turn on Pip's lessons, worksheets, quizzes and tests." : "Pip's lessons are off until a grown-up adds a Claude key in the Parent corner. Number-fact practice still works."}</div>`);
+// A grade whose every weekly topic has built-in lessons and problems works with no key and no internet.
+const builtIn = (grade) => SUBJ_IDS.every((s) => year(s, grade).every((t) => t.op));
+const aiBanner = (parent, grades = family.kids.map((k) => k.grade)) => {
+  if (ai.aiReady() || !grades.length) return "";
+  if (grades.every(builtIn)) return parent ? `<div class="banner">The built-in course is on, so everything works offline. Add a Claude API key in Family settings to also turn on the "Ask Pip" tutor chat, progress notes and fresh new problems.</div>` : "";
+  return `<div class="banner">${parent ? "Some grades still need a Claude API key for Pip's lessons, worksheets, quizzes and tests. Add one in Family settings." : "Some of Pip's lessons need a grown-up to add a Claude key in the Parent corner. Number-fact practice still works."}</div>`;
+};
 const subjectTabs = (cur, attr) => `<div class="subjects" role="tablist">${SUBJ_IDS.map((id) => `<button class="subj ${id === cur ? "on" : ""}" ${attr}="${id}" role="tab" aria-selected="${id === cur}">${SUBJECTS[id].name}</button>`).join("")}</div>`;
 const typePill = (type) => `<span class="pill type-${type}">${TYPE_LABEL[type]}</span>`;
 
@@ -119,7 +126,7 @@ function kidView() {
     }).join("")}</div>
     ${type === "quiz" || type === "test" ? `<p class="small muted">${type === "test" ? "Monthly test: show what you learned this unit. No hints this time, just do your best!" : "Friday quiz: a quick check on this week. No hints, just do your best!"}</p>` : ""}`;
   }
-  return header(`<button class="btn ghost" data-go="home">Switch kid</button>`) + aiBanner(false) + `
+  return header(`<button class="btn ghost" data-go="home">Switch kid</button>`) + aiBanner(false, [k.grade]) + `
   <div class="card"><div class="row spread"><div class="row">${avatar(k)}<div><h1>Hi, ${esc(k.name)}!</h1><p class="muted">${gradeLabel(k.grade)} · ${isFinished(pos) ? "year complete" : `week ${pos.week} of ${WEEKS}`}</p></div></div>
   <div class="row"><span class="stars">★ ${stars} stars</span>${st ? `<span class="pill warn">${st}-day streak</span>` : ""}</div></div>
   <div class="goalbar" role="progressbar" aria-label="Year progress" aria-valuenow="${Math.min(100, pct(pos.week - 1, WEEKS))}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.min(100, pct((pos.week - 1) * 5 + pos.day, WEEKS * 5))}%"></i></div>
@@ -157,7 +164,7 @@ async function startSheet(kidId, subject, kind, slot, topicId) {
   const myView = view;
   const misses = kidLog(kidId).filter((l) => plan.items.some((it) => (l.byTopic || {})[it.topic.id])).flatMap((l) => l.misses || []).slice(-4).map((m) => m.q);
   try {
-    if (!ai.aiReady()) throw { code: "no_key" };
+    if (!ai.useClaude()) throw { code: "no_key" };
     const lessonP = plan.type === "learn" ? (family.lessons[main.id] ? Promise.resolve(family.lessons[main.id]) : ai.makeLesson(main)) : null;
     const [probs, lesson] = await Promise.all([ai.makeSheet(subject, k.grade, plan.type, plan.items, misses), lessonP]);
     if (view !== myView) return;
@@ -165,8 +172,10 @@ async function startSheet(kidId, subject, kind, slot, topicId) {
     Object.assign(view, { probs, lesson, state: "ready" });
   } catch (e) {
     if (view !== myView) return;
-    const local = plan.items.filter((it) => it.topic.op).flatMap((it) => localProblems(it.topic.op, it.level, it.count).map((p) => ({ ...p, topicId: it.topic.id, passage: "" })));
-    if (local.length) Object.assign(view, { probs: local, offline: true, state: "ready", phase: "q", lesson: null });
+    // The built-in course: problems made on the device, and a written lesson (or one Pip wrote earlier).
+    const local = offlineSheet(plan.items, k.grade);
+    const lesson = plan.type === "learn" ? family.lessons[main.id] || offlineLesson(main) : null;
+    if (local.length) Object.assign(view, { probs: local, offline: true, state: "ready", phase: lesson ? "lesson" : "q", lesson });
     else Object.assign(view, { state: "error", err: e?.code });
   }
   render();
@@ -206,7 +215,7 @@ function sheetView() {
     : check ? "" : `<div class="row">${view.tries.length ? `<button class="btn" id="hint">Get a hint</button>` : ""}${view.shown ? "" : `<button class="btn" id="showstep">Show me how</button>`}${view.shown >= p.steps.length ? `<button class="btn ghost" id="reveal">I see it, show the answer</button>` : ""}</div>`;
   const side = check
     ? `<div class="card"><div class="row">${owl(36)}<h3>${view.kind === "test" ? "Test time" : "Quiz time"}</h3></div><p class="muted">Read each question carefully and take your time. You'll see what you got right, and how to solve the rest, at the end.</p><p class="small muted">${view.results.filter(Boolean).length} of ${n} answered</p></div>`
-    : ai.aiReady() && !view.offline
+    : ai.aiReady()
       ? `<div class="card"><div class="row">${owl(36)}<h3>Ask Pip</h3></div>
     <div class="chat" id="chat">${view.chat.length ? "" : `<div class="msg pipm">Stuck? Tell me what you're thinking, or ask me a question about this problem.</div>`}${view.chat.map((m) => `<div class="msg ${m.role === "user" ? "kidm" : "pipm"}">${esc(m.content)}</div>`).join("")}${view.thinking ? `<div class="msg pipm">Pip is thinking…</div>` : ""}</div>
     <form class="chatform" id="chatform"><input type="text" id="chatin" maxlength="300" placeholder="Type to Pip" aria-label="Message to Pip" ${view.thinking ? "disabled" : ""}><button class="btn" type="submit" ${view.thinking ? "disabled" : ""}>Send</button></form></div>`
@@ -440,10 +449,11 @@ function setupView() {
   ${addKidForm()}
   </div>
   <div class="card"><h2>Pip's brain (Claude)</h2>
-  <p class="muted small">Pip writes lessons, worksheets, quizzes, tests and reports using Claude. Create an API key at <code>console.anthropic.com</code> → API keys, and set a monthly spend limit there. The key is saved only on this device and is sent only to Anthropic.</p>
+  <p class="muted small">Grades 2 and 3 have a built-in course that works with no key and no internet. With a Claude key, Pip also chats with your child, writes progress notes and makes fresh lessons and problems. Create an API key at <code>console.anthropic.com</code> → API keys, and set a monthly spend limit there. The key is saved only on this device and is sent only to Anthropic.</p>
   <form id="aiform" class="row" style="align-items:flex-end">
     <label class="f" style="flex:1 1 260px">API key<input type="password" id="apikey" autocomplete="off" placeholder="${s.key ? "Saved (" + esc(s.key.slice(0, 10)) + "…). Paste to replace" : "sk-ant-…"}"></label>
     <label class="f">Model<select id="model">${ai.MODELS.map((m) => `<option value="${m.id}" ${m.id === s.model ? "selected" : ""}>${m.label}</option>`).join("")}</select></label>
+    <label class="f">Lessons and sheets<select id="source"><option value="claude" ${s.source !== "builtin" ? "selected" : ""}>Fresh from Claude, built-in when offline</option><option value="builtin" ${s.source === "builtin" ? "selected" : ""}>Built-in course only (free; chat still uses Claude)</option></select></label>
     <button class="btn primary" type="submit">Save and test</button>
     ${s.key ? `<button class="btn ghost" type="button" id="forgetkey">Remove key</button>` : ""}
   </form>
@@ -516,14 +526,14 @@ function bind() {
   on("#aiform", "submit", async (e) => {
     e.preventDefault();
     const s = ai.loadAi(), key = $("#apikey").value.trim();
-    ai.saveAi({ key: key || s.key, model: $("#model").value });
+    ai.saveAi({ key: key || s.key, model: $("#model").value, source: $("#source").value });
     if (!ai.aiReady()) { view.aiMsg = { ok: false, text: "Paste an API key first." }; render(); return; }
     view.aiMsg = { wait: true, text: "Testing the key…" }; render();
     try { await ai.testKey(); view.aiMsg = { ok: true, text: "Pip is connected and ready." }; }
     catch (err) { view.aiMsg = { ok: false, text: ERR[err.code] || `That didn't work (${err.message || err.code}).` }; }
     if (view.name === "setup") render();
   });
-  on("#forgetkey", "click", () => { ai.saveAi({ key: "", model: ai.loadAi().model }); view.aiMsg = { ok: true, text: "Key removed from this device." }; render(); });
+  on("#forgetkey", "click", () => { ai.saveAi({ ...ai.loadAi(), key: "" }); view.aiMsg = { ok: true, text: "Key removed from this device." }; render(); });
   on("#copybackup", "click", async () => { try { await navigator.clipboard.writeText(exportJson()); view.backupMsg = { ok: true, text: "Copied" }; } catch { view.showBackup = true; view.backupMsg = { ok: false, text: "Couldn't copy. Select the text below instead." }; } render(); });
   on("#showbackup", "click", () => { view.showBackup = !view.showBackup; render(); });
   on("#restore", "click", () => { try { importJson($("#restoretext").value); view.backupMsg = { ok: true, text: "Restored" }; } catch { view.backupMsg = { ok: false, text: "That backup text isn't valid." }; } render(); });

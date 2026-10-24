@@ -18,6 +18,8 @@ export function saveAi(s) {
   client = null;
 }
 export const aiReady = () => !!loadAi().key;
+// Claude writes the sheets unless the parent picked the built-in course only.
+export const useClaude = () => aiReady() && loadAi().source !== "builtin";
 
 let client = null;
 function getClient() {
