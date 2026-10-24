@@ -34,7 +34,7 @@ Every sheet also mixes in problems from earlier weeks, with weaker topics coming
 - A "Write a progress note" button for a summary with next steps
 - Course settings to set the start date and move to any week, for example to match the class
 
-**Works offline for number facts.** Addition, subtraction, multiplication, division and integer topics have built-in sheets, so math practice still works without internet or an API key.
+**Grades 2 and 3 work fully offline.** Every week of the Grade 2 and Grade 3 math and English course has a built-in lesson, practice sheets, quizzes and monthly tests made on the device, with pictures, reading passages and writing prompts. No internet and no API key are needed. A Claude key is optional: it adds the tutor chat, progress notes and freshly written lessons and problems. In **Family settings** you can choose **Built-in course** to stay offline even with a key saved. Other grades use Claude for now, with number-fact sheets built in.
 
 ## Set it up
 
@@ -51,11 +51,11 @@ Every sheet also mixes in problems from earlier weeks, with weaker topics coming
 
 It then opens full screen from its own icon, like a regular app.
 
-### 3. Add the family and connect Claude
+### 3. Add the family (and optionally connect Claude)
 
 1. Open the app and add each child with their grade for this school year.
 2. Tap **Parent corner** and choose a PIN. Under **Course settings**, set the start date to the first day of school, and pick the week that matches what the class is doing now.
-3. Open **Family settings**. Create an API key at [console.anthropic.com](https://console.anthropic.com) → **API keys**, paste it into **Pip's brain (Claude)**, and tap **Save and test**.
+3. Optional: open **Family settings**. Create an API key at [console.anthropic.com](https://console.anthropic.com) → **API keys**, paste it into **Pip's brain (Claude)**, and tap **Save and test**.
 
 Set a monthly spend limit in the Anthropic Console so costs stay predictable. You can pick a cheaper model (Sonnet or Haiku) in Family settings.
 
@@ -84,6 +84,7 @@ Code layout:
 | `src/plan.js` | The daily plan, review mixing and pacing |
 | `src/ai.js` | Claude calls: lessons, worksheets, quizzes, tests, answer checks, tutor chat, progress notes |
 | `src/check.js` | Answer matching and the built-in number-fact sheets |
+| `src/offline/` | The built-in Grade 2–3 course: problem makers, English banks, reading passages and lessons |
 | `src/visuals.js` | Draws the math pictures (number lines, base-ten blocks, strip diagrams and more) from small JSON specs |
 | `src/store.js` | Saving family data on the device, backup and restore |
 | `src/main.js` | Screens and interactions |

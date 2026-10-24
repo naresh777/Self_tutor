@@ -195,3 +195,13 @@ label.f{min-width:0;max-width:100%}
 .viz .fr-on{fill:var(--plum);fill-opacity:.7;stroke:var(--ink);stroke-width:2}.viz .fr-off{fill:var(--card);stroke:var(--ink);stroke-width:2}
 .viz .pv-h{fill:var(--idle);stroke:var(--ink);stroke-width:2}
 .steps .vizbox,.lesson .vizbox{margin-bottom:6px}
+.viz .rulerbody{fill:#f6e7b0;stroke:var(--ink);stroke-width:2}.viz .rulerbody~text{fill:#1d2a44}
+.viz .pencil{fill:var(--sun);stroke:var(--ink);stroke-width:2}.viz .pencil-tip{fill:#e9c9a0;stroke:var(--ink);stroke-width:2}
+.viz .ribbon{fill:var(--plum);stroke:var(--ink);stroke-width:1.5}.viz .worm{fill:#e58aa8;stroke:var(--ink);stroke-width:1.5}
+.viz .guide{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:4 4}
+.viz .sq{fill:var(--teal);fill-opacity:.18;stroke:var(--ink);stroke-width:1;stroke-opacity:.5}.viz .sq-plain{fill:var(--teal);fill-opacity:.12}
+.viz .shape{fill:var(--teal);fill-opacity:.25;stroke:var(--ink);stroke-width:3;stroke-linejoin:round}
+.viz .shape2{fill:var(--teal);fill-opacity:.45;stroke:var(--ink);stroke-width:3;stroke-linejoin:round}
+.viz .shape3{fill:var(--teal);fill-opacity:.6;stroke:var(--ink);stroke-width:3;stroke-linejoin:round}
+.viz .dash{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:5 5}
+.viz .dotx{font-size:22px;fill:var(--plum)}
