@@ -113,8 +113,8 @@ function kidView() {
   if (isFinished(pos)) {
     today_ = `<div class="row">${owl(56, "bob")}<div><h2>You finished the whole year!</h2><p class="muted">Amazing work. Keep your skills sharp with extra practice from your course map.</p></div></div>`;
   } else if (c.lastDayDone === today() && !view.ahead) {
-    today_ = `<div class="row">${owl(56, "bob")}<div><h2>All done for today!</h2><p class="muted">Great job. Come back tomorrow for ${DAYS[pos.day]}'s work in week ${pos.week}.</p></div></div>
-    <div class="row"><button class="btn" id="ahead">Start the next day early</button></div>`;
+    today_ = `<div class="row">${owl(56, "bob")}<div><h2>All done for today!</h2><p class="muted">Great job. Next up is week ${pos.week}, ${DAYS[pos.day]}. Come back tomorrow, or keep going now if you'd like.</p></div></div>
+    <div class="row"><button class="btn primary big" id="ahead">Keep going: week ${pos.week}, ${DAYS[pos.day]}</button></div>`;
   } else {
     const done = slotDone(k, pos);
     const type = dayType(pos.week, pos.day);
@@ -328,10 +328,10 @@ function doneHtml(k, main) {
   const topics = check ? Object.entries(family.log.at(-1).byTopic).map(([id, [a, b]]) => `<span class="pill ${a / b >= 0.8 ? "good" : a / b >= 0.6 ? "warn" : "bad"}">${esc(topic(id)?.name)}: ${a}/${b}</span>`).join("") : "";
   return `<div class="card"><div class="confetti" aria-hidden="true">${conf}</div><div class="row">${owl(64, "bob")}<div><h1>${heading}</h1>
   <p>${esc(k.name)} got <b>${c} of ${n}</b> right${check ? ` (${score}%) on the ${TYPE_LABEL[view.kind].toLowerCase()}` : " on the first go"}.</p></div></div>
-  ${view.dayComplete ? `<div class="fb good">That's all of today's work! +5 bonus stars.</div>` : ""}
+  ${view.dayComplete ? `<div class="fb good">That's all of today's work! +5 bonus stars.${isFinished(course(k).pos) ? "" : ` Next up: week ${course(k).pos.week}, ${DAYS[course(k).pos.day]}.`}</div>` : ""}
   ${topics ? `<div class="row">${topics}</div>` : ""}
   ${review.length ? `<details ${check ? "open" : ""}><summary>${check ? "Let's look at the ones you missed" : "Problems to look at again"}</summary><div class="review">${review.map(({ p, r }) => `<div class="rv"><p><b>${esc(p.question)}</b></p>${renderVisual(p.picture)}<p class="small">You answered: ${esc(r.given || "(no answer)")} · Answer: <b>${esc(p.answer)}</b></p>${renderVisual(p.visual)}<ol class="steps">${p.steps.map((s) => `<li><span>${esc(s)}</span></li>`).join("")}</ol></div>`).join("")}</div></details>` : ""}
-  <div class="row">${otherLeft ? `<button class="btn primary big" data-today="${other}">Now ${SUBJECTS[other].name}</button>` : ""}${view.kind === "extra" ? `<button class="btn primary big" data-extra="${view.topicId}">Another sheet</button>` : ""}<button class="btn ${otherLeft || view.kind === "extra" ? "" : "primary big"}" data-kid="${k.id}" data-ksub="${view.subject}">Back to my page</button></div></div>`;
+  <div class="row">${otherLeft ? `<button class="btn primary big" data-today="${other}">Now ${SUBJECTS[other].name}</button>` : ""}${view.kind === "extra" ? `<button class="btn primary big" data-extra="${view.topicId}">Another sheet</button>` : ""}${view.dayComplete && !isFinished(course(k).pos) ? `<button class="btn" data-ahead="${k.id}">Keep going: week ${course(k).pos.week}, ${DAYS[course(k).pos.day]}</button>` : ""}<button class="btn ${otherLeft || view.kind === "extra" ? "" : "primary big"}" data-kid="${k.id}" data-ksub="${view.subject}">Back to my page</button></div></div>`;
 }
 
 async function askPip(text) {
@@ -480,6 +480,7 @@ function startToday(subject) {
 function bind() {
   on("[data-go]", "click", (_, b) => { const g = b.dataset.go; go({ name: g, unlocked: (g === "parent" || g === "setup") && view.unlocked, pk: view.pk }); });
   on("[data-kid]", "click", (_, b) => go({ name: "kid", kid: b.dataset.kid, subject: b.dataset.ksub || view.subject }));
+  on("[data-ahead]", "click", (_, b) => go({ name: "kid", kid: b.dataset.ahead, subject: "math", ahead: true }));
   on("[data-subject]", "click", (_, b) => { view.subject = b.dataset.subject; render(); });
   on("[data-today]", "click", (_, b) => startToday(b.dataset.today));
   on("[data-extra]", "click", (_, b) => { const t = topic(b.dataset.extra); startSheet(view.kid, t.subject, "extra", null, t.id); });
