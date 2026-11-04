@@ -2,6 +2,7 @@ import "./style.css";
 import { GRADES, SUBJECTS, WEEKS, DAYS, gradeLabel, year, units, topic, isTeks } from "./course.js";
 import { dayType, TYPE_LABEL, mastery, sheetPlan, extraPlan, advance, isFinished, pace, monthOf } from "./plan.js";
 import { renderVisual } from "./visuals.js";
+import { padCard, mountPad } from "./pad.js";
 import { isCorrect, normText } from "./check.js";
 import * as ai from "./ai.js";
 import { offlineSheet, offlineLesson } from "./offline/index.js";
@@ -86,6 +87,7 @@ function render() {
   const v = view.name;
   $("#app").innerHTML = v === "kid" ? kidView() : v === "sheet" ? sheetView() : v === "parent" ? parentView() : v === "setup" ? setupView() : homeView();
   bind();
+  mountPad();
 }
 
 /* ---------------- home ---------------- */
@@ -226,7 +228,7 @@ function sheetView() {
     <div class="row spread"><span class="pill">${label}</span><div class="dots" aria-label="Problem ${view.i + 1} of ${n}">${dots}</div></div>
     ${passage}
     <p class="small muted">Problem ${view.i + 1} of ${n} · ${esc(t?.name || "")}${t && t.id !== view.topicId && !isCheck(view.kind) ? " (review)" : ""}${view.offline ? " · built-in sheet" : ""}</p>
-    <div class="qrow"><div class="q">${esc(p.question)}</div>${speakBtn("question", "Read the question aloud")}</div>${renderVisual(p.picture)}${input}${fb}${steps}${help}</div>${side}</div>`;
+    <div class="qrow"><div class="q">${esc(p.question)}</div>${speakBtn("question", "Read the question aloud")}</div>${renderVisual(p.picture)}${input}${fb}${steps}${help}</div><div class="side">${side}${padCard(`${view.i}-${[...p.question].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0)}`)}</div></div>`;
 }
 
 function lessonHtml(t, L) {
