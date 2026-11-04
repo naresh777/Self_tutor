@@ -3,6 +3,7 @@ import { GRADES, SUBJECTS, WEEKS, DAYS, gradeLabel, year, units, topic, isTeks }
 import { dayType, TYPE_LABEL, mastery, sheetPlan, extraPlan, advance, isFinished, pace, monthOf } from "./plan.js";
 import { renderVisual } from "./visuals.js";
 import { padCard, mountPad } from "./pad.js";
+import * as voice from "./voice.js";
 import { isCorrect, normText } from "./check.js";
 import * as ai from "./ai.js";
 import { offlineSheet, offlineLesson } from "./offline/index.js";
@@ -57,19 +58,14 @@ const needsReview = (k) => SUBJ_IDS.flatMap((s) => year(s, k.grade).filter((t) =
 const testsFor = (k, kind) => kidLog(k.id).filter((l) => l.kind === kind && l.grade === k.grade);
 
 /* ---------------- read aloud ---------------- */
-const canSpeak = "speechSynthesis" in window;
-function speak(text) {
-  if (!canSpeak) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text.replace(/×/g, " times ").replace(/÷/g, " divided by ").replace(/−/g, " minus "));
-  u.rate = 0.9;
-  speechSynthesis.speak(u);
-}
-const speakBtn = (id, label = "Read aloud") => (canSpeak ? `<button class="speak" data-speak="${id}" aria-label="${label}" title="${label}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></button>` : "");
+const canSpeak = voice.canSpeak;
+voice.useSettings(() => family.voice || {});
+if (canSpeak) speechSynthesis.addEventListener?.("voiceschanged", () => { if (view?.name === "setup") render(); });
+const speakBtn = (id, label = "Read aloud") => (canSpeak ? `<button class="speak" data-speak="${id}" data-label="${label}" aria-label="${label}" title="${label}" aria-pressed="false"><svg class="ico-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg><svg class="ico-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>` : "");
 
 /* ---------------- shell ---------------- */
 let view = { name: "home" };
-function go(v) { view = v; render(); window.scrollTo({ top: 0 }); }
+function go(v) { voice.stop(); view = v; render(); window.scrollTo({ top: 0 }); }
 const owl = (size = 44, cls = "") => `<svg class="pip ${cls}" style="width:${size}px;height:${size}px" viewBox="0 0 64 64" aria-hidden="true"><use href="#owl"/></svg>`;
 const avatar = (k, sm) => `<span class="av ${sm ? "sm" : ""}" style="background:${k.color}">${esc((k.name || "?").trim()[0]?.toUpperCase() || "?")}</span>`;
 const header = (right = "") => `<div class="top"><button class="brand" data-go="home" aria-label="Pip Tutor home">${owl(46)}<span><b>Pip Tutor</b><small>Math and English for our family</small></span></button><div class="row">${right}</div></div>`;
@@ -86,9 +82,14 @@ const typePill = (type) => `<span class="pill type-${type}">${TYPE_LABEL[type]}<
 function render() {
   const v = view.name;
   $("#app").innerHTML = v === "kid" ? kidView() : v === "sheet" ? sheetView() : v === "parent" ? parentView() : v === "setup" ? setupView() : homeView();
+  // Moving to another problem or screen stops any reading.
+  const sk = [v, view.phase, view.state, view.i, view.kind].join("|");
+  if (sk !== lastSpeakKey) { lastSpeakKey = sk; voice.stop(); }
   bind();
   mountPad();
+  voice.sync();
 }
+let lastSpeakKey = "";
 
 /* ---------------- home ---------------- */
 function homeView() {
@@ -364,6 +365,17 @@ async function askPip(text) {
 function scrollChat() { const el = $("#chat"); if (el) el.scrollTop = el.scrollHeight; }
 
 /* ---------------- parent corner ---------------- */
+function voiceCard() {
+  const vs = voice.englishVoices(), cur = family.voice || {}, best = voice.bestVoice(cur.name);
+  return `<div class="card"><h2>Read-aloud voice</h2>
+  <p class="muted small">The speaker button reads questions, passages and lessons out loud. Tap it again to stop. Pip picks the friendliest voice on this device and reads a little slowly. You can change both here.${vs.length < 3 ? " On iPad you can download nicer voices in Settings → Accessibility → Spoken Content → Voices → English (try Ava or Samantha, Enhanced)." : ""}</p>
+  <div class="row" style="align-items:flex-end">
+    <label class="f" style="flex:1 1 220px">Voice<select id="vname">${vs.map((v) => `<option value="${esc(v.name)}" ${best && v.name === best.name ? "selected" : ""}>${esc(v.name.replace(/\s*\(.*?\)\s*/g, " ").trim())} (${esc(v.lang)})</option>`).join("") || `<option value="">Device default</option>`}</select></label>
+    <label class="f">Speed<select id="vspeed">${voice.SPEEDS.map((x) => `<option value="${x.id}" ${x.id === (cur.speed || "gentle") ? "selected" : ""}>${x.label}</option>`).join("")}</select></label>
+    <button class="btn" type="button" id="vtry">Try it</button>
+  </div></div>`;
+}
+
 function parentView() {
   const back = `<button class="btn ghost" data-go="home">Back to kids</button>`;
   if (!view.unlocked) {
@@ -461,6 +473,7 @@ function setupView() {
   </form>
   ${view.aiMsg ? `<div class="fb ${view.aiMsg.ok ? "good" : view.aiMsg.wait ? "info" : "bad"}">${esc(view.aiMsg.text)}</div>` : ""}
   </div>
+  ${canSpeak ? voiceCard() : ""}
   <div class="card"><h2>Parent PIN</h2><form id="newpin" class="row"><input type="password" inputmode="numeric" id="pin2" maxlength="8" placeholder="New PIN" aria-label="New PIN" style="width:140px"><button class="btn" type="submit">Change PIN</button>${view.pinSaved ? `<span class="pill good">Saved</span>` : ""}</form></div>
   <div class="card"><h2>Backup and moving devices</h2>
   <p class="muted small">Progress is saved on this device. To move it to another iPad or phone, copy the backup text below, then paste it into Restore on the other device.</p>
@@ -496,9 +509,9 @@ function bind() {
   on("[data-choice]", "click", (_, b) => { const p = view.probs[view.i]; view.sel = +b.dataset.choice; checkAnswer(p.choices[view.sel]); });
   on("[data-speak]", "click", (_, b) => {
     const w = b.dataset.speak;
-    if (w === "lesson") { const L = view.lesson; speak([L.title, L.intro, ...L.points, L.example ? "Let's try one together. " + L.example.problem + ". " + L.example.steps.join(". ") : "", L.tip].join(". ")); return; }
+    if (w === "lesson") { const L = view.lesson; voice.toggle(w, [L.title, L.intro, ...L.points, L.example ? "Let's try one together. " + L.example.problem + ". " + L.example.steps.join(". ") : "", L.tip].join(". ")); return; }
     const p = view.probs[view.i];
-    speak(w === "passage" ? p.passage : p.question + (p.type === "choice" ? ". " + p.choices.join(". ") : ""));
+    voice.toggle(w, w === "passage" ? p.passage : p.question + (p.type === "choice" ? ". " + p.choices.join(". ") : ""));
   });
   on("#hint", "click", () => { view.hinted = true; view.fb = { kind: "info", text: "Hint: " + view.probs[view.i].hint }; render(); });
   on("#showstep, #morestep", "click", () => { view.shown = Math.min(view.probs[view.i].steps.length, view.shown + 1); render(); });
@@ -525,6 +538,8 @@ function bind() {
   on("[data-askdel]", "click", (_, b) => { view.confirmDel = b.dataset.askdel; render(); });
   on("[data-nodel]", "click", () => { view.confirmDel = null; render(); });
   on("[data-del]", "click", (_, b) => { const id = b.dataset.del; family.kids = family.kids.filter((k) => k.id !== id); delete family.progress[id]; delete family.stars[id]; delete family.done[id]; family.log = family.log.filter((l) => l.kid !== id); view.confirmDel = null; save(); render(); });
+  on("#vname, #vspeed", "change", () => { family.voice = { name: $("#vname").value, speed: $("#vspeed").value }; save(); voice.speak("Hi! I'm Pip. Let's read this problem together.", "_try"); });
+  on("#vtry", "click", () => voice.toggle("_try", "Hi! I'm Pip. What is 7 plus 5? Take your time and think it through."));
   on("#newpin", "submit", (e) => { e.preventDefault(); const v = $("#pin2").value.trim(); if (v) { family.pin = v; view.pinSaved = true; save(); render(); } });
   on("#aiform", "submit", async (e) => {
     e.preventDefault();
