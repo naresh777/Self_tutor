@@ -133,6 +133,10 @@ details summary{cursor:pointer;font-weight:800}
 .passage{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:1.05rem;line-height:1.65;white-space:pre-wrap;max-height:320px;overflow-y:auto}
 .speak{border:0;background:var(--idle);border-radius:999px;width:40px;height:40px;display:inline-grid;place-items:center;flex:none}
 .speak svg{width:20px;height:20px}
+.speak .ico-stop{display:none}
+.speak.on{background:var(--accent);color:var(--accent-ink)}
+.speak.on .ico-stop{display:block}
+.speak.on .ico-play{display:none}
 .qrow{display:flex;gap:10px;align-items:flex-start}
 .qrow .q{flex:1;min-width:0}
 button,a,input,select{touch-action:manipulation}
