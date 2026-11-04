@@ -79,6 +79,15 @@ label.f{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:.9r
 /* practice */
 .prac{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
 @media (max-width:760px){.prac{grid-template-columns:1fr}}
+.side{display:flex;flex-direction:column;gap:16px;min-width:0}
+.pad{display:flex;flex-direction:column;gap:8px}
+.padtools{display:flex;gap:8px;flex-wrap:wrap}
+.padtools .btn{padding:4px 12px;font-size:.9rem}
+.padtools .btn.sel{border-color:var(--plum);background:var(--idle)}
+.pad canvas{display:block;width:100%;height:280px;touch-action:none;cursor:crosshair;border:2px dashed var(--line);border-radius:12px;
+  background-color:var(--paper);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.pad canvas.erasing{cursor:cell}
+@media (max-width:760px){.pad canvas{height:240px}}
 .dots{display:flex;gap:6px}
 .dots span{width:26px;height:8px;border-radius:999px;background:var(--idle)}
 .dots span.on{background:var(--plum)}.dots span.ok{background:var(--good)}.dots span.no{background:var(--bad)}
