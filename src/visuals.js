@@ -484,7 +484,23 @@ function cubes(v) {
   return svg(x0 + l * u + w * dx + 50, y0 + h * u + 34, out, `A box ${l} by ${w} by ${h} unit cubes`);
 }
 
-const DRAW = { angle, coord, cubes, objects, lengths, hundred, tally, position, ruler, area, polygon, solid, fractionline, table, numberline, blocks, tenframe, strip, bar: strip, barmodel: strip, array, groups, clock, coins, fraction, graph, placevalue };
+/* ---------- month calendar ---------- */
+// {month: "March", start: 0-6 (weekday of the 1st, 0 = Sunday), days: 28-31, mark: [dates to circle]}
+function calendar(v) {
+  const start = int(v.start, 0, 6), days = int(v.days, 28, 31);
+  if (start === null || days === null) return "";
+  const mark = new Set((Array.isArray(v.mark) ? v.mark : []).map((d) => int(d, 1, 31)));
+  const C = 64, top = 74, rows = Math.ceil((start + days) / 7), W = C * 7 + 20, H = top + rows * C + 10;
+  let out = `<rect x="10" y="8" width="${C * 7}" height="${H - 18}" rx="10" class="cal-bg"/>` + text(W / 2, 36, String(v.month || "").slice(0, 12), "lbl big");
+  ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach((d, i) => { out += text(10 + i * C + C / 2, top - 12, d, "lbl sm" + (i === 0 || i === 6 ? " cal-we" : "")); });
+  for (let d = 1; d <= days; d++) {
+    const cell = start + d - 1, x = 10 + (cell % 7) * C, y = top + Math.floor(cell / 7) * C;
+    out += `<rect x="${x + 2}" y="${y + 2}" width="${C - 4}" height="${C - 4}" rx="6" class="cal-cell${mark.has(d) ? " cal-mark" : ""}"/>` + text(x + C / 2, y + C / 2 + 7, d, "lbl");
+  }
+  return svg(W, H, out, `Calendar for ${v.month || "a month"}`);
+}
+
+const DRAW = { angle, coord, cubes, objects, lengths, hundred, tally, position, ruler, area, polygon, solid, fractionline, table, numberline, blocks, tenframe, strip, bar: strip, barmodel: strip, array, groups, clock, coins, fraction, graph, placevalue, calendar };
 
 export function renderVisual(v) {
   if (!v || typeof v !== "object" || !DRAW[v.type]) return "";

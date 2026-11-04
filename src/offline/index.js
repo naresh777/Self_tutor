@@ -11,6 +11,7 @@ import { EN_UPPER } from "./english-upper.js";
 import { MIDDLE_PASSAGES } from "./passages-middle.js";
 import { EN_MIDDLE } from "./english-middle.js";
 import { LESSONS } from "./lessons.js";
+import { gk } from "./gk.js";
 
 const PASSAGES = [...EARLY_PASSAGES, ...LATER, ...UPPER_PASSAGES, ...MIDDLE_PASSAGES];
 const EN_ALL = { ...EN, ...EN_EARLY, ...EN_UPPER, ...EN_MIDDLE };
@@ -37,6 +38,7 @@ function readSet(skills, count, grade) {
 // One problem for an op like "add3", "e:prefix:3", "w:letter", "read:theme" or "mix:a+b".
 export function one(op, lvl, grade) {
   if (op.startsWith("mix:")) return one(pick(op.slice(4).split("+")), lvl, grade);
+  if (op.startsWith("g:")) return gk(op.slice(2), lvl, grade);
   if (op.startsWith("read:")) return readSet(op.slice(5).split(","), 1, grade)[0];
   if (op.startsWith("w:")) return EN.write(lvl, op.slice(2));
   if (op.startsWith("e:")) { const [name, arg] = op.slice(2).split(":"); return EN_ALL[name](lvl, arg); }

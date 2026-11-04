@@ -277,6 +277,15 @@ export const units = (subject, grade) => {
 };
 
 const byId = {};
+// General knowledge: extra practice outside the weekly course, open any time from the kid's page.
+export const GK = { name: "General knowledge", color: "var(--sun)" };
+export const GK_TOPICS = [
+  ["days", "Days of the week"], ["months", "Months of the year"], ["calendar", "Reading a calendar"],
+  ["seasons", "Seasons"], ["timefacts", "Time facts"], ["coins", "Coins and money"],
+  ["measure", "Measuring facts"], ["space", "Earth and space"], ["nature", "Animals and nature"],
+].map(([k, name], i) => ({ id: `gk-${k}`, subject: "gk", grade: "", unit: 0, week: 0, name, op: `g:${k}`, gk: true, n: i }));
+for (const t of GK_TOPICS) byId[t.id] = t;
+
 export function topic(id) {
   if (byId[id]) return byId[id];
   const [subject, grade] = id.split("-");

@@ -1,5 +1,5 @@
 import "./style.css";
-import { GRADES, SUBJECTS, WEEKS, DAYS, gradeLabel, year, units, topic, isTeks } from "./course.js";
+import { GRADES, SUBJECTS, WEEKS, DAYS, gradeLabel, year, units, topic, isTeks, GK, GK_TOPICS } from "./course.js";
 import { dayType, TYPE_LABEL, mastery, sheetPlan, extraPlan, advance, isFinished, pace, monthOf } from "./plan.js";
 import { renderVisual } from "./visuals.js";
 import { padCard, mountPad } from "./pad.js";
@@ -19,6 +19,8 @@ const dayKey = (t) => iso(new Date(t));
 const today = () => iso();
 const COLORS = ["#ef6a3a", "#1c9a8c", "#7a5af5", "#d94f8a", "#2f7de1", "#c98a00"];
 const SUBJ_IDS = Object.keys(SUBJECTS);
+const subjName = (s) => (s === "gk" ? GK.name : SUBJECTS[s]?.name || "");
+const GK_ICON = { days: "🗓️", months: "📆", calendar: "📅", seasons: "🍂", timefacts: "⏰", coins: "🪙", measure: "📏", space: "🌍", nature: "🐸" };
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const pct = (c, t) => (t ? Math.round((c / t) * 100) : 0);
 const fmtDate = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -110,7 +112,7 @@ const addKidForm = () => `<form id="addkid" class="row" style="align-items:flex-
 function kidView() {
   const k = getKid(view.kid); if (!k) return homeView();
   const c = course(k), pos = c.pos;
-  const subject = (view.subject ||= "math");
+  const subject = (view.subject = SUBJECTS[view.subject] ? view.subject : "math");
   const st = streak(k.id), stars = family.stars[k.id] || 0;
   let today_;
   if (isFinished(pos)) {
@@ -134,8 +136,15 @@ function kidView() {
   <div class="row"><span class="stars">★ ${stars} stars</span>${st ? `<span class="pill warn">${st}-day streak</span>` : ""}</div></div>
   <div class="goalbar" role="progressbar" aria-label="Year progress" aria-valuenow="${Math.min(100, pct(pos.week - 1, WEEKS))}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.min(100, pct((pos.week - 1) * 5 + pos.day, WEEKS * 5))}%"></i></div>
   ${today_}</div>
+  ${gkCard(k)}
   <div class="card"><div class="row spread"><h2>My course map</h2><span class="muted small">Tap a week you've reached for extra practice</span></div>
   ${subjectTabs(subject, "data-subject")}${courseMap(k, subject, false)}</div>`;
+}
+
+function gkCard(k) {
+  const peek = peekFor(k.id);
+  return `<div class="card"><div class="row spread"><h2>General knowledge</h2><span class="muted small">Everyday facts. Practice any time!</span></div>
+  <div class="gk">${GK_TOPICS.map((t) => { const p = peek(t.id), st = status(p); return `<button class="gkt" data-extra="${t.id}"><span class="gki" aria-hidden="true">${GK_ICON[t.id.slice(3)] || "⭐"}</span><b>${esc(t.name)}</b>${p.attempts ? `<span class="pill ${st.cls}">${st.label}</span>` : ""}</button>`; }).join("")}</div></div>`;
 }
 
 function courseMap(k, subject, parent) {
@@ -167,7 +176,8 @@ async function startSheet(kidId, subject, kind, slot, topicId) {
   const myView = view;
   const misses = kidLog(kidId).filter((l) => plan.items.some((it) => (l.byTopic || {})[it.topic.id])).flatMap((l) => l.misses || []).slice(-4).map((m) => m.q);
   try {
-    if (!ai.useClaude()) throw { code: "no_key" };
+    // General knowledge always uses the built-in facts, which are checked and kid-sized.
+    if (!ai.useClaude() || subject === "gk") throw { code: "no_key" };
     const lessonP = plan.type === "learn" ? (family.lessons[main.id] ? Promise.resolve(family.lessons[main.id]) : ai.makeLesson(main)) : null;
     const [probs, lesson] = await Promise.all([ai.makeSheet(subject, k.grade, plan.type, plan.items, misses), lessonP]);
     if (view !== myView) return;
@@ -196,7 +206,7 @@ function sheetView() {
   const k = getKid(view.kid), main = topic(view.topicId);
   const head = header(`<button class="btn ghost" id="quit">${isCheck(view.kind) ? "Stop for now" : "End practice"}</button>`);
   const title = view.kind === "test" ? `Month ${monthOf(main.week)} test: weeks ${main.week - 3} to ${main.week}` : main.name;
-  const label = `${SUBJECTS[view.subject].name} · ${TYPE_LABEL[view.kind]}`;
+  const label = `${subjName(view.subject)} · ${TYPE_LABEL[view.kind]}`;
   if (view.state === "loading")
     return head + `<div class="card"><div class="loader">${owl(64, "bob")}<div><h2>${view.kind === "learn" ? "Pip is getting today's lesson ready…" : view.kind === "test" ? "Pip is writing your test…" : view.kind === "quiz" ? "Pip is writing your quiz…" : "Pip is writing your worksheet…"}</h2><p class="muted">${label} · ${esc(title)}. This can take up to a minute${view.kind === "test" ? " or two" : ""}.</p></div></div></div>`;
   if (view.state === "error")
@@ -334,7 +344,7 @@ function doneHtml(k, main) {
   ${view.dayComplete ? `<div class="fb good">That's all of today's work! +5 bonus stars.${isFinished(course(k).pos) ? "" : ` Next up: week ${course(k).pos.week}, ${DAYS[course(k).pos.day]}.`}</div>` : ""}
   ${topics ? `<div class="row">${topics}</div>` : ""}
   ${review.length ? `<details ${check ? "open" : ""}><summary>${check ? "Let's look at the ones you missed" : "Problems to look at again"}</summary><div class="review">${review.map(({ p, r }) => `<div class="rv"><p><b>${esc(p.question)}</b></p>${renderVisual(p.picture)}<p class="small">You answered: ${esc(r.given || "(no answer)")} · Answer: <b>${esc(p.answer)}</b></p>${renderVisual(p.visual)}<ol class="steps">${p.steps.map((s) => `<li><span>${esc(s)}</span></li>`).join("")}</ol></div>`).join("")}</div></details>` : ""}
-  <div class="row">${otherLeft ? `<button class="btn primary big" data-today="${other}">Now ${SUBJECTS[other].name}</button>` : ""}${view.kind === "extra" ? `<button class="btn primary big" data-extra="${view.topicId}">Another sheet</button>` : ""}${view.dayComplete && !isFinished(course(k).pos) ? `<button class="btn" data-ahead="${k.id}">Keep going: week ${course(k).pos.week}, ${DAYS[course(k).pos.day]}</button>` : ""}<button class="btn ${otherLeft || view.kind === "extra" ? "" : "primary big"}" data-kid="${k.id}" data-ksub="${view.subject}">Back to my page</button></div></div>`;
+  <div class="row">${otherLeft ? `<button class="btn primary big" data-today="${other}">Now ${SUBJECTS[other].name}</button>` : ""}${view.kind === "extra" ? `<button class="btn primary big" data-extra="${view.topicId}">Another sheet</button>` : ""}${view.dayComplete && !isFinished(course(k).pos) ? `<button class="btn" data-ahead="${k.id}">Keep going: week ${course(k).pos.week}, ${DAYS[course(k).pos.day]}</button>` : ""}<button class="btn ${otherLeft || view.kind === "extra" ? "" : "primary big"}" data-kid="${k.id}" data-ksub="${SUBJECTS[view.subject] ? view.subject : "math"}">Back to my page</button></div></div>`;
 }
 
 async function askPip(text) {
@@ -428,7 +438,7 @@ function parentView() {
   </form>
   <p class="small muted">Changing the week starts that week from Monday. Earlier weeks are treated as already covered, and their topics still come back in review.</p></div>
   <div class="card"><h2>Recent activity</h2>${L.length ? `<div class="tablewrap"><table><thead><tr><th>When</th><th>What</th><th>Score</th><th>Missed</th></tr></thead><tbody>
-  ${L.slice(-30).reverse().map((l) => `<tr><td class="num">${fmtDate(l.at)} ${new Date(l.at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</td><td>${SUBJECTS[l.subject]?.name || ""} · ${TYPE_LABEL[l.kind] || ""}${l.week ? ` · W${l.week}` : ""}<br><span class="small muted">${esc(l.kind === "test" ? "Unit " + l.unit : topic(l.topic)?.name || "")}</span></td><td class="num">${l.correct}/${l.total}</td><td>${(l.misses || []).length ? `<details><summary class="small">${l.misses.length} problem${l.misses.length > 1 ? "s" : ""}</summary>${l.misses.map((m) => `<p class="small" style="margin-top:6px">${esc(m.q)}<br><span class="muted">Answered ${esc(m.g || "(no answer)")} · correct ${esc(m.a)}</span></p>`).join("")}</details>` : `<span class="muted small">None</span>`}</td></tr>`).join("")}
+  ${L.slice(-30).reverse().map((l) => `<tr><td class="num">${fmtDate(l.at)} ${new Date(l.at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</td><td>${subjName(l.subject)} · ${TYPE_LABEL[l.kind] || ""}${l.week ? ` · W${l.week}` : ""}<br><span class="small muted">${esc(l.kind === "test" ? "Unit " + l.unit : topic(l.topic)?.name || "")}</span></td><td class="num">${l.correct}/${l.total}</td><td>${(l.misses || []).length ? `<details><summary class="small">${l.misses.length} problem${l.misses.length > 1 ? "s" : ""}</summary>${l.misses.map((m) => `<p class="small" style="margin-top:6px">${esc(m.q)}<br><span class="muted">Answered ${esc(m.g || "(no answer)")} · correct ${esc(m.a)}</span></p>`).join("")}</details>` : `<span class="muted small">None</span>`}</td></tr>`).join("")}
   </tbody></table></div>` : `<p class="muted">No work yet. Each lesson, practice sheet, quiz and test shows up here with any missed problems.</p>`}</div>`;
 }
 
