@@ -1,5 +1,5 @@
 // Offline support: keep the app itself on the device. Calls to Claude always go to the network.
-const CACHE = "pip-tutor-v10";
+const CACHE = "pip-tutor-v11";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {
