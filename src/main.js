@@ -4,6 +4,7 @@ import { dayType, TYPE_LABEL, mastery, sheetPlan, extraPlan, advance, isFinished
 import { renderVisual } from "./visuals.js";
 import { padCard, mountPad } from "./pad.js";
 import * as voice from "./voice.js";
+import { rd, hideWord } from "./words.js";
 import { isCorrect, normText } from "./check.js";
 import * as ai from "./ai.js";
 import { offlineSheet, offlineLesson } from "./offline/index.js";
@@ -61,7 +62,10 @@ const testsFor = (k, kind) => kidLog(k.id).filter((l) => l.kind === kind && l.gr
 
 /* ---------------- read aloud ---------------- */
 const canSpeak = voice.canSpeak;
-voice.useSettings(() => family.voice || {});
+voice.useSettings(() => ({ ...(family.voice || {}), ...(easyOn() ? { speed: "slow" } : {}) }));
+// Easy reading (per child): bigger, spaced-out text, a slower voice, and each question read aloud.
+const easyOn = () => !!(view && getKid(view.kid)?.easy);
+const easyBtn = (k) => `<button class="btn ${k.easy ? "sel" : "ghost"} easybtn" data-easy="${k.id}" aria-pressed="${!!k.easy}" title="Bigger, spaced-out words and a slower voice">Aa Easy reading${k.easy ? ": on" : ""}</button>`;
 if (canSpeak) speechSynthesis.addEventListener?.("voiceschanged", () => { if (view?.name === "setup") render(); });
 const speakBtn = (id, label = "Read aloud") => (canSpeak ? `<button class="speak" data-speak="${id}" data-label="${label}" aria-label="${label}" title="${label}" aria-pressed="false"><svg class="ico-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg><svg class="ico-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>` : "");
 
@@ -81,14 +85,21 @@ const aiBanner = (parent, grades = family.kids.map((k) => k.grade)) => {
 const subjectTabs = (cur, attr) => `<div class="subjects" role="tablist">${SUBJ_IDS.map((id) => `<button class="subj ${id === cur ? "on" : ""}" ${attr}="${id}" role="tab" aria-selected="${id === cur}">${SUBJECTS[id].name}</button>`).join("")}</div>`;
 const typePill = (type) => `<span class="pill type-${type}">${TYPE_LABEL[type]}</span>`;
 
+const questionText = (p) => p.question + (p.type === "choice" ? ". " + p.choices.join(". ") : "");
+
 function render() {
   const v = view.name;
+  hideWord();
+  document.body.classList.toggle("easy", easyOn() && (v === "kid" || v === "sheet"));
   $("#app").innerHTML = v === "kid" ? kidView() : v === "sheet" ? sheetView() : v === "parent" ? parentView() : v === "setup" ? setupView() : homeView();
   // Moving to another problem or screen stops any reading.
   const sk = [v, view.phase, view.state, view.i, view.kind].join("|");
-  if (sk !== lastSpeakKey) { lastSpeakKey = sk; voice.stop(); }
+  const fresh = sk !== lastSpeakKey;
+  if (fresh) { lastSpeakKey = sk; voice.stop(); }
   bind();
   mountPad();
+  // Easy reading reads each new question out loud.
+  if (fresh && easyOn() && v === "sheet" && view.state === "ready" && view.phase === "q" && view.probs[view.i]) voice.toggle("question", questionText(view.probs[view.i]));
   voice.sync();
 }
 let lastSpeakKey = "";
@@ -131,7 +142,7 @@ function kidView() {
     }).join("")}</div>
     ${type === "quiz" || type === "test" ? `<p class="small muted">${type === "test" ? "Monthly test: show what you learned this unit. No hints this time, just do your best!" : "Friday quiz: a quick check on this week. No hints, just do your best!"}</p>` : ""}`;
   }
-  return header(`<button class="btn ghost" data-go="home">Switch kid</button>`) + aiBanner(false, [k.grade]) + `
+  return header(`${easyBtn(k)}<button class="btn ghost" data-go="home">Switch kid</button>`) + aiBanner(false, [k.grade]) + `
   <div class="card"><div class="row spread"><div class="row">${avatar(k)}<div><h1>Hi, ${esc(k.name)}!</h1><p class="muted">${gradeLabel(k.grade)} · ${isFinished(pos) ? "year complete" : `week ${pos.week} of ${WEEKS}`}</p></div></div>
   <div class="row"><span class="stars">★ ${stars} stars</span>${st ? `<span class="pill warn">${st}-day streak</span>` : ""}</div></div>
   <div class="goalbar" role="progressbar" aria-label="Year progress" aria-valuenow="${Math.min(100, pct(pos.week - 1, WEEKS))}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.min(100, pct((pos.week - 1) * 5 + pos.day, WEEKS * 5))}%"></i></div>
@@ -204,7 +215,7 @@ const ERR = {
 
 function sheetView() {
   const k = getKid(view.kid), main = topic(view.topicId);
-  const head = header(`<button class="btn ghost" id="quit">${isCheck(view.kind) ? "Stop for now" : "End practice"}</button>`);
+  const head = header(`${easyBtn(k)}<button class="btn ghost" id="quit">${isCheck(view.kind) ? "Stop for now" : "End practice"}</button>`);
   const title = view.kind === "test" ? `Month ${monthOf(main.week)} test: weeks ${main.week - 3} to ${main.week}` : main.name;
   const label = `${subjName(view.subject)} · ${TYPE_LABEL[view.kind]}`;
   if (view.state === "loading")
@@ -218,10 +229,12 @@ function sheetView() {
   const dots = view.probs.map((_, j) => { const r = view.results[j]; return `<span class="${r ? (check ? "on" : r.score >= 1 ? "ok" : r.score > 0 ? "on" : "no") : j === view.i ? "cur" : ""}"></span>`; }).join("");
   const answered = view.fb && (view.fb.kind === "good" || view.fb.kind === "reveal");
   const lock = answered || view.checking;
+  // English choices (and every choice in easy reading) get a speaker so kids can hear each word.
+  const sayChoices = canSpeak && (view.subject === "english" || easyOn());
   const input = p.type === "choice"
-    ? `<div class="choices" role="group" aria-label="Choices">${p.choices.map((c, j) => `<button class="choice ${view.sel === j ? "sel" : ""}" data-choice="${j}" ${lock ? "disabled" : ""}>${esc(c)}</button>`).join("")}</div>`
+    ? `<div class="choices" role="group" aria-label="Choices">${p.choices.map((c, j) => { const b = `<button class="choice ${view.sel === j ? "sel" : ""}" data-choice="${j}" ${lock ? "disabled" : ""}>${esc(c)}</button>`; return sayChoices ? `<div class="chw">${b}<button type="button" class="speak sm" data-say="${esc(c)}" aria-label="Hear ${esc(c)}" title="Hear it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg></button></div>` : b; }).join("")}</div>`
     : `<form class="ans" id="ansform"><input id="ans" type="text" inputmode="${p.type === "number" ? "decimal" : "text"}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Your answer" placeholder="Your answer" ${lock ? "disabled" : ""}><button class="btn primary" type="submit" ${lock ? "disabled" : ""}>${view.checking ? "Checking…" : check ? "Save answer" : "Check"}</button></form>`;
-  const steps = view.shown ? `<div><h3>Step by step</h3>${renderVisual(p.visual)}<ol class="steps">${p.steps.slice(0, view.shown).map((s) => `<li><span>${esc(s)}</span></li>`).join("")}</ol>${view.shown < p.steps.length ? `<button class="btn" id="morestep" style="margin-top:8px">Show next step</button>` : ""}</div>` : "";
+  const steps = view.shown ? `<div><h3>Step by step</h3>${renderVisual(p.visual)}<ol class="steps">${p.steps.slice(0, view.shown).map((s) => `<li><span>${rd(s)}</span></li>`).join("")}</ol>${view.shown < p.steps.length ? `<button class="btn" id="morestep" style="margin-top:8px">Show next step</button>` : ""}</div>` : "";
   const fb = view.fb ? `<div class="fb ${view.fb.kind === "good" ? "good" : view.fb.kind === "bad" ? "bad" : "info"}" role="status">${esc(view.fb.text)}</div>` : "";
   const help = answered
     ? `<button class="btn primary big" id="next">${view.i + 1 < n ? "Next problem" : "See my results"}</button>`
@@ -233,22 +246,22 @@ function sheetView() {
     <div class="chat" id="chat">${view.chat.length ? "" : `<div class="msg pipm">Stuck? Tell me what you're thinking, or ask me a question about this problem.</div>`}${view.chat.map((m) => `<div class="msg ${m.role === "user" ? "kidm" : "pipm"}">${esc(m.content)}</div>`).join("")}${view.thinking ? `<div class="msg pipm">Pip is thinking…</div>` : ""}</div>
     <form class="chatform" id="chatform"><input type="text" id="chatin" maxlength="300" placeholder="Type to Pip" aria-label="Message to Pip" ${view.thinking ? "disabled" : ""}><button class="btn" type="submit" ${view.thinking ? "disabled" : ""}>Send</button></form></div>`
       : `<div class="card"><div class="row">${owl(36)}<h3>Pip's tips</h3></div><p class="muted">${["K", "1", "2", "3"].includes(k?.grade) ? "Read the problem out loud. Draw a picture or use your fingers." : "Read the problem twice and underline what it asks. Sketch a diagram or table if it helps."} Then check your answer by doing it a second way.</p></div>`;
-  const passage = p.passage ? `<div><div class="row spread"><h3>Read this first</h3>${speakBtn("passage", "Read the passage aloud")}</div><div class="passage">${esc(p.passage)}</div></div>` : "";
+  const passage = p.passage ? `<div><div class="row spread"><h3>Read this first</h3>${speakBtn("passage", "Read the passage aloud")}</div><div class="passage">${rd(easyOn() ? p.passage.replace(/([.!?]["”]?) +/g, "$1\n") : p.passage)}</div></div>` : "";
   const t = topic(p.topicId);
   return head + `<div class="prac"><div class="card">
     <div class="row spread"><span class="pill">${label}</span><div class="dots" aria-label="Problem ${view.i + 1} of ${n}">${dots}</div></div>
     ${passage}
     <p class="small muted">Problem ${view.i + 1} of ${n} · ${esc(t?.name || "")}${t && t.id !== view.topicId && !isCheck(view.kind) ? " (review)" : ""}${view.offline ? " · built-in sheet" : ""}</p>
-    <div class="qrow"><div class="q">${esc(p.question)}</div>${speakBtn("question", "Read the question aloud")}</div>${renderVisual(p.picture)}${input}${fb}${steps}${help}</div><div class="side">${side}${padCard(`${view.i}-${[...p.question].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0)}`)}</div></div>`;
+    <div class="qrow"><div class="q">${rd(p.question)}</div>${speakBtn("question", "Read the question aloud")}</div>${renderVisual(p.picture)}${input}${fb}${steps}${help}</div><div class="side">${side}${padCard(`${view.i}-${[...p.question].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0)}`)}</div></div>`;
 }
 
 function lessonHtml(t, L) {
   return `<div class="card lesson"><div class="row spread"><span class="pill">${SUBJECTS[t.subject].name} · New lesson · Week ${t.week}${t.teks ? ` · TEKS ${esc(t.teks)}` : ""}</span>${speakBtn("lesson", "Read the lesson aloud")}</div>
-  <div class="row">${owl(56)}<h1>${esc(L.title)}</h1></div>
-  <p class="lead">${esc(L.intro)}</p>
-  <ul class="points">${L.points.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
-  ${L.example ? `<div><h3>Let's try one together</h3><div class="q" style="font-size:1.25rem">${esc(L.example.problem)}</div>${renderVisual(L.example.visual)}<ol class="steps" style="margin-top:10px">${L.example.steps.map((s) => `<li><span>${esc(s)}</span></li>`).join("")}</ol></div>` : ""}
-  ${L.tip ? `<div class="fb info">Pip's tip: ${esc(L.tip)}</div>` : ""}
+  <div class="row">${owl(56)}<h1>${rd(L.title)}</h1></div>
+  <p class="lead">${rd(L.intro)}</p>
+  <ul class="points">${L.points.map((x) => `<li>${rd(x)}</li>`).join("")}</ul>
+  ${L.example ? `<div><h3>Let's try one together</h3><div class="q" style="font-size:1.25rem">${rd(L.example.problem)}</div>${renderVisual(L.example.visual)}<ol class="steps" style="margin-top:10px">${L.example.steps.map((s) => `<li><span>${rd(s)}</span></li>`).join("")}</ol></div>` : ""}
+  ${L.tip ? `<div class="fb info">Pip's tip: ${rd(L.tip)}</div>` : ""}
   <div class="row"><button class="btn primary big" id="topractice">I'm ready to practice</button></div></div>`;
 }
 
@@ -517,11 +530,13 @@ function bind() {
   on("#ansform", "submit", (e) => { e.preventDefault(); checkAnswer($("#ans").value); });
   const a = $("#ans"); if (a && !a.disabled && !view.chatFocus && window.matchMedia("(pointer:fine)").matches) a.focus();
   on("[data-choice]", "click", (_, b) => { const p = view.probs[view.i]; view.sel = +b.dataset.choice; checkAnswer(p.choices[view.sel]); });
+  on("[data-say]", "click", (_, b) => voice.sayList([b.dataset.say], easyOn() ? 0.65 : 0.8));
+  on("[data-easy]", "click", (_, b) => { const kid = getKid(b.dataset.easy); kid.easy = !kid.easy; save(); lastSpeakKey = ""; render(); });
   on("[data-speak]", "click", (_, b) => {
     const w = b.dataset.speak;
     if (w === "lesson") { const L = view.lesson; voice.toggle(w, [L.title, L.intro, ...L.points, L.example ? "Let's try one together. " + L.example.problem + ". " + L.example.steps.join(". ") : "", L.tip].join(". ")); return; }
     const p = view.probs[view.i];
-    voice.toggle(w, w === "passage" ? p.passage : p.question + (p.type === "choice" ? ". " + p.choices.join(". ") : ""));
+    voice.toggle(w, w === "passage" ? p.passage : questionText(p));
   });
   on("#hint", "click", () => { view.hinted = true; view.fb = { kind: "info", text: "Hint: " + view.probs[view.i].hint }; render(); });
   on("#showstep, #morestep", "click", () => { view.shown = Math.min(view.probs[view.i].steps.length, view.shown + 1); render(); });
