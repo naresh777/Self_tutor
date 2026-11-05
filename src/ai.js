@@ -121,6 +121,8 @@ const KIND = {
 // Texas (TEKS) grades: Prosper ISD and Frisco ISD teach to these standards, and STAAR tests them.
 function teksNote(subject, grade) {
   if (!isTeks(subject, grade)) return "";
+  if (subject === "science" || subject === "social")
+    return `\nThis child goes to school in Texas (Prosper ISD), so follow the Texas ${subject === "science" ? "science" : "social studies"} TEKS for this grade. Keep questions short and concrete, with everyday examples a ${gradeLabel(grade).toLowerCase()} child knows${subject === "social" ? ", and use Texas and Prosper examples where they fit" : ""}.`;
   return subject === "math"
     ? `\nThis child goes to school in Texas (Frisco / Prosper ISD), so teach the way Texas classrooms do. Each topic lists its TEKS student expectation; write problems that match it exactly. Use the Texas words and models: strip diagrams, open number lines, base-ten blocks, place value, "compose" and "decompose", and STAAR-style wording. On quizzes and tests, write some problems the way STAAR asks them (pick the number sentence that matches a strip diagram, which statement is true, read the graph).`
     : `\nThis child goes to school in Texas (Frisco / Prosper ISD), so follow the Texas ELAR TEKS. Each topic lists its TEKS student expectation; write problems that match it. On quizzes and tests, ask some questions the way STAAR reading does (main idea, which detail supports, what a word means in the passage).`;

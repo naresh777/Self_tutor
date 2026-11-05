@@ -1,13 +1,13 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { GRADES, SUBJECTS, WEEKS, year, units, topic } from "../src/course.js";
+import { GRADES, SUBJECTS, CORE, subjectsFor, WEEKS, year, units, topic } from "../src/course.js";
 import { dayType, sheetPlan, advance, pace } from "../src/plan.js";
 
 const peek = () => ({ recent: [], attempts: 0, correct: 0 });
 
 test("every grade has a full 36-week year in each subject", () => {
-  for (const s of Object.keys(SUBJECTS))
-    for (const g of GRADES) {
+  for (const g of GRADES)
+    for (const s of subjectsFor(g)) {
       const y = year(s, g);
       assert.equal(y.length, WEEKS, `${s} ${g}`);
       assert.equal(new Set(y.map((t) => t.id)).size, WEEKS);
@@ -48,4 +48,14 @@ test("pace compares school days with course days", () => {
   assert.equal(pace({ start: "2026-10-05", pos: { week: 2, day: 4 } }, fri).k, "on");
   assert.equal(pace({ start: "2026-10-05", pos: { week: 1, day: 0 } }, fri).k, "behind");
   assert.equal(pace({ start: "2026-10-05", pos: { week: 2, day: 0 } }, mon).k, "ahead");
+});
+
+test("science and social studies are optional Grade 2 tabs that follow the class first", () => {
+  assert.deepEqual(CORE, ["math", "english"]);
+  assert.deepEqual(subjectsFor("2"), ["math", "english", "science", "social"]);
+  assert.deepEqual(subjectsFor("5"), ["math", "english"]);
+  assert.ok(SUBJECTS.science.optional && SUBJECTS.social.optional);
+  assert.equal(year("science", "2")[0].name, "Physical properties: color, shape, texture and weight");
+  assert.equal(year("social", "2")[0].name, "What makes a good citizen");
+  for (const s of ["science", "social"]) assert.ok(year(s, "2").slice(33).every((t) => t.bridge && t.grade === "3"));
 });
