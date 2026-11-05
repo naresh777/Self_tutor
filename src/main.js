@@ -21,7 +21,7 @@ const today = () => iso();
 const COLORS = ["#ef6a3a", "#1c9a8c", "#7a5af5", "#d94f8a", "#2f7de1", "#c98a00"];
 const SUBJ_IDS = Object.keys(SUBJECTS);
 const subjName = (s) => (s === "gk" ? GK.name : SUBJECTS[s]?.name || "");
-const GK_ICON = { days: "🗓️", months: "📆", calendar: "📅", seasons: "🍂", timefacts: "⏰", coins: "🪙", measure: "📏", space: "🌍", nature: "🐸" };
+const GK_ICON = { days: "🗓️", months: "📆", calendar: "📅", seasons: "🍂", timefacts: "⏰", coins: "🪙", measure: "📏", space: "🌍", nature: "🐸", materials: "🧱", states: "🧊", forces: "🛝", sound: "🥁", citizens: "🤝", symbols: "🇺🇸", government: "🏛️" };
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const pct = (c, t) => (t ? Math.round((c / t) * 100) : 0);
 const fmtDate = (t) => new Date(t).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -154,8 +154,8 @@ function kidView() {
 
 function gkCard(k) {
   const peek = peekFor(k.id);
-  return `<div class="card"><div class="row spread"><h2>General knowledge</h2><span class="muted small">Everyday facts. Practice any time!</span></div>
-  <div class="gk">${GK_TOPICS.map((t) => { const p = peek(t.id), st = status(p); return `<button class="gkt" data-extra="${t.id}"><span class="gki" aria-hidden="true">${GK_ICON[t.id.slice(3)] || "⭐"}</span><b>${esc(t.name)}</b>${p.attempts ? `<span class="pill ${st.cls}">${st.label}</span>` : ""}</button>`; }).join("")}</div></div>`;
+  return `<div class="card"><div class="row spread"><h2>General knowledge</h2><span class="muted small">Facts, science and social studies. Practice any time!</span></div>
+  ${[...new Set(GK_TOPICS.map((t) => t.group))].map((g) => `<h3 class="gkh">${esc(g)}</h3><div class="gk">${GK_TOPICS.filter((t) => t.group === g).map((t) => { const p = peek(t.id), st = status(p); return `<button class="gkt" data-extra="${t.id}"><span class="gki" aria-hidden="true">${GK_ICON[t.id.slice(3)] || "⭐"}</span><b>${esc(t.name)}</b>${p.attempts ? `<span class="pill ${st.cls}">${st.label}</span>` : ""}</button>`; }).join("")}</div>`).join("")}</div>`;
 }
 
 function courseMap(k, subject, parent) {

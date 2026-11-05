@@ -38,21 +38,19 @@ const SCOPE = {
       ["Data", ["Tally charts|tallyq", "Picture graphs|graph", "Reading bar graphs|graph", "Answering questions about data|mix:graph+tallyq"]],
       ["Shapes and fractions", ["2D and 3D shapes|mix:flat+flatsolid+solids", "Building new shapes|mix:solids+flat", "Halves|half:2", "Fourths (quarters)|half:4"]],
     ],
-    // Texas TEKS (19 TAC 111.4), in the unit order of Frisco ISD's 2025-26 Grade 2 math scope and sequence.
-    // Texas TEKS (19 TAC 111.4), in the unit order of Frisco ISD's 2025-26 Grade 2 math scope and sequence.
+    // Texas TEKS (19 TAC 111.4). The first weeks follow her own class's order.
     2: [
+      // Weeks 1-11 follow her class (Prosper ISD Grade 2 weekly notes): place value, even and odd, number lines, comparing, then shapes and area.
+      ["Numbers to 1,200", ["Hundreds, tens and ones with base-ten blocks|pv3#2.2(A)", "Standard, word and expanded form|forms#2.2(B)", "Making a number more than one way|mix:compose+compose+moreless#2.2(A), 2.2(B), 2.7(B)", "Even and odd numbers with pairs|evenodd#2.7(A)"]],
+      ["Number lines and comparing", ["Open number lines and 10 or 100 more or less|mix:skipnl+skipnl+moreless#2.2(E), 2.2(F), 2.7(B)", "Building numbers to 1,200 with thousands|pv4#2.2(A)", "Comparing and ordering with >, < and =|cmp:1200#2.2(C), 2.2(D)", "Place value review: comparing and ordering to 1,200|mix:pv3+pv4+forms+compose+cmp:1200+cmp:1200+moreless#2.2"]],
+      ["Geometry and area", ["Polygons: sides, vertices, regular and irregular|mix:shapes2+shapes2+polyreg#2.8(A), 2.8(C)", "3D solids and putting shapes together and apart|solids#2.8(B), 2.8(D), 2.8(E)", "Area: covering rectangles with square units|area2#2.9(F)"]],
       ["Fact strategies", ["Addition facts to 20: make a ten and doubles|add20#2.4(A)", "Subtraction facts to 20: think addition|sub20#2.4(A)"]],
-      ["Numbers to 1,200", ["Hundreds, tens and ones with base-ten blocks|pv3#2.2(A)", "Building numbers to 1,200 with thousands|pv4#2.2(A)", "Standard, word and expanded form|forms#2.2(B)", "Making a number more than one way|compose#2.2(A), 2.2(B)"]],
-      ["Comparing numbers to 1,200", ["Comparing and ordering with >, < and =|cmp:1200#2.2(C), 2.2(D)", "Open number lines and 10 or 100 more or less|moreless#2.2(E), 2.2(F), 2.7(B)"]],
       ["Adding and subtracting two-digit numbers", ["Adding two-digit numbers with mental math|add2#2.4(B)", "Adding up to four two-digit numbers|add4#2.4(B)", "Subtracting two-digit numbers|sub2#2.4(B)"]],
       ["Adding and subtracting to 1,000", ["Adding three-digit numbers with place value|add3#2.4(C)", "Subtracting three-digit numbers with place value|sub3#2.4(C)", "Word problems with the unknown in any spot|wp#2.7(C), 2.4(D)"]],
-      ["Data analysis", ["Pictographs and bar graphs|graph#2.10(A), 2.10(B)", "Solving problems with graphs|graph#2.10(C), 2.10(D)"]],
-      ["Money", ["First-semester review: place value and adding|mix:pv3+forms+cmp:1200+add2+sub2+add3+sub3#2.2, 2.4", "Coin values and counting coins to one dollar|coins#2.5(A)", "Writing money with ¢, $ and a decimal point|money#2.5(B)"]],
-      ["Geometry", ["2D shapes: sides and vertices|shapes2#2.8(A), 2.8(C)", "3D solids and putting shapes together and apart|solids#2.8(B), 2.8(D), 2.8(E)"]],
+      ["Data and money", ["Pictographs and bar graphs|graph#2.10(A), 2.10(B), 2.10(C), 2.10(D)", "Coin values and counting coins to one dollar|coins#2.5(A)", "Writing money with ¢, $ and a decimal point|money#2.5(B)"]],
       ["Fractions", ["Halves, fourths and eighths|frac2#2.3(A), 2.3(D)", "More parts make smaller parts; counting parts past one whole|frac2b#2.3(B), 2.3(C)"]],
-      ["Time", ["Time to the minute, a.m. and p.m.|time#2.9(G)"]],
-      ["Measurement", ["Measuring length with rulers and units|measure#2.9(A), 2.9(B), 2.9(D)", "Length problems, number line distances and area|length#2.9(C), 2.9(E), 2.9(F)"]],
-      ["Adding and subtracting to 1,000, part 2", ["Regrouping across tens and hundreds|regroup#2.4(C)", "Multi-step word problems|multistep#2.4(C), 2.7(C)", "Writing a story for a number sentence|story#2.4(D)"]],
+      ["Time and measurement", ["Time to the minute, a.m. and p.m.|time#2.9(G)", "Measuring length with rulers and units|measure#2.9(A), 2.9(B), 2.9(D)", "Length problems, number line distances and area|length#2.9(C), 2.9(E), 2.9(F)"]],
+      ["Adding and subtracting to 1,000, part 2", ["Regrouping across tens and hundreds|regroup#2.4(C)", "Multi-step word problems|mix:multistep+multistep+story#2.4(C), 2.4(D), 2.7(C)"]],
       ["Multiplication and division", ["Equal groups: joining sets to multiply|groups#2.6(A)", "Sharing equally to divide; even and odd|share#2.6(B), 2.7(A)"]],
       ["Personal financial literacy", ["Saving, spending, deposits and withdrawals|fin#2.11(A), 2.11(B), 2.11(C)", "Borrowing, lending, producers and consumers|fin:b#2.11(D), 2.11(E), 2.11(F)"]],
       ["Getting ready for Grade 3", ["Place value to 100,000 and rounding|mix:pv5+round#3.2(A), 3.2(C)", "Adding and subtracting within 1,000 with estimation|mix:est+add3+sub3#3.4(A), 3.4(B)", "Multiplication with equal groups and arrays|arrays#3.4(D), 3.4(E)"]],
@@ -146,13 +144,14 @@ const SCOPE = {
     ],
     // Texas TEKS for English Language Arts and Reading, Grade 2 (19 TAC 110.4).
     2: [
-      ["Phonics and story basics", ["Short and long vowels; open and closed syllables|e:vowels#2.2(B)(i)", "Silent e and vowel teams|e:vteams#2.2(B)(i)", "Bossy r: ar, or, er, ir, ur|e:rcontrol#2.2(B)(i)", "Story elements: characters, setting and plot|read:elements,setting,plot#2.8(B), 2.8(C), 2.8(D)"]],
-      ["Fiction", ["Main character traits, inside and out|read:character#2.8(B)", "Plot: problem, main events and solution|read:plot#2.8(C)", "Making predictions and inferences|read:infer#2.6(C), 2.6(F)", "Theme: the lesson of a story|read:theme#2.8(A)"]],
-      ["Word study", ["Vowel sounds oi, oy, ou, ow; contractions|e:diph#2.2(B)(i), 2.2(B)(iii)", "Prefixes un-, re- and dis-|e:prefix#2.3(C)", "Suffixes -er, -or, -ful, -less and -ly|e:suffix#2.3(C)", "Synonyms, antonyms and context clues|e:syn#2.3(B), 2.3(D)"]],
-      ["Informational text", ["Central idea and supporting details|read:central#2.9(D)(i)", "Text features: headings, captions, diagrams|read:features#2.9(D)(ii), 2.10(C)", "Order of events and cause and effect|read:cause,structure#2.9(D)(iii)", "Author's purpose|read:purpose#2.10(A)"]],
-      ["Grammar", ["Nouns: common, proper, singular and plural|e:nouns#2.11(D)(iii)", "Verbs: past, present and future|e:verbs#2.11(D)(ii)", "Adjectives, articles and adverbs|e:adj#2.11(D)(iv), 2.11(D)(v)", "Pronouns and prepositions|e:pronoun#2.11(D)(vi), 2.11(D)(vii)"]],
-      ["Folktales, poetry and drama", ["Fables and folktales|read:fable#2.9(A)", "Fairy tales: comparing versions|read:fairy,compare#2.9(A)", "Poetry: rhyme, rhythm, repetition and alliteration|read:poem#2.9(B), 2.10(D)", "Drama: reading a play|read:drama#2.9(C)"]],
-      ["Writing conventions", ["Complete sentences and subject-verb agreement|e:sentence#2.11(D)(i)", "Joining with and, but, or|e:conj#2.11(D)(viii)", "Capital letters for months, days and names|e:caps#2.11(D)(ix)", "End marks, apostrophes, and commas in lists and dates|mix:e:punct+e:diph#2.11(D)(x)"]],
+      // Weeks 1-12 follow her class (Prosper ISD Grade 2 weekly notes): each week pairs a phonics skill with a grammar skill, plus that week's reading focus.
+      ["Digraphs, capitals and sentences", ["Consonant digraphs sh, ch, th, wh; capital letters|mix:e:dig2+e:dig2+e:caps#2.2(B)(i), 2.11(D)(ix)", "Digraphs ck, ph, ng; statements, questions and exclamations|mix:e:dig2+e:stype2+e:stype2#2.2(B)(i), 2.11(D)(x)", "Open and closed syllables; editing marks; problems and feelings in stories|mix:e:opensyl+e:edit2+read:plot,feelings#2.2(B)(i), 2.11(C), 2.8(B), 2.8(C)", "Silent e words; subject-verb agreement; order of events|mix:e:vce1+e:agree2+read:sequence,plot#2.2(B)(i), 2.11(D)(i), 2.8(C)"]],
+      ["Word sounds, describing words and poems", ["Soft c and g, -ge and -dge; adjectives; parts of a book|mix:e:softcg+e:softcg+e:adj2+e:bookparts#2.2(B)(i), 2.11(D)(iv)", "Schwa and the floss rule; adverbs; haiku and acrostic poems|mix:e:schwa+e:floss+e:adv2+e:poemform#2.2(B)(i), 2.11(D)(v), 2.9(B)", "ar and or words; adverbs; onomatopoeia and alliteration|mix:e:aror+e:aror+e:adv2+e:poemsound+read:poem#2.2(B)(i), 2.11(D)(v), 2.9(B), 2.10(D)", "er, ir and ur words; correcting sentences; character traits inside and out|mix:e:erirur+e:erirur+e:edit2+read:character#2.2(B)(i), 2.11(C), 2.8(B)"]],
+      ["Longer words and informational text", ["Multisyllable silent e words; retelling a story in order|mix:e:vce2+e:vce2+e:adv2+read:plot,sequence#2.2(A), 2.8(C)", "Multisyllable silent e words; prepositions; text features and author's purpose|mix:e:vce2+e:prep2+read:features,purpose#2.2(A), 2.11(D)(vii), 2.9(D)(ii), 2.10(A)", "Phonics review: silent e, schwa and bossy r; prepositions|mix:e:vce2+e:schwa+e:aror+e:erirur+e:prep2+read:features,purpose#2.2(A), 2.2(B)(i), 2.11(D)(vii)", "Review: phonics, grammar and reading so far|mix:e:dig2+e:softcg+e:floss+e:vce2+e:stype2+e:adv2+e:prep2+read:character,plot,features#2.2, 2.8, 2.11"]],
+      ["Vowel teams and word parts", ["Silent e and vowel teams|e:vteams#2.2(B)(i)", "Vowel sounds oi, oy, ou, ow; contractions|e:diph#2.2(B)(i), 2.2(B)(iii)", "Prefixes un-, re- and dis-|e:prefix#2.3(C)", "Suffixes -er, -or, -ful, -less and -ly|e:suffix#2.3(C)"]],
+      ["Informational text, nouns and verbs", ["Central idea and supporting details|read:central#2.9(D)(i)", "Order of events and cause and effect|read:cause,structure#2.9(D)(iii)", "Nouns: common, proper, singular and plural|e:nouns#2.11(D)(iii)", "Verbs: past, present and future|e:verbs#2.11(D)(ii)"]],
+      ["Fiction and drama", ["Making predictions and inferences|read:infer#2.6(C), 2.6(F)", "Theme: the lesson of a story|read:theme#2.8(A)", "Fables and folktales|read:fable#2.9(A)", "Drama: reading a play|read:drama#2.9(C)"]],
+      ["Words, sentences and fairy tales", ["Synonyms, antonyms and context clues|e:syn#2.3(B), 2.3(D)", "Pronouns and prepositions|e:pronoun#2.11(D)(vi), 2.11(D)(vii)", "Joining with and, but, or|mix:e:conj+e:punct#2.11(D)(viii), 2.11(D)(x)", "Fairy tales: comparing versions|read:fairy,compare#2.9(A)"]],
       ["Writing and research", ["Personal narratives|w:narrative#2.12(A)", "How-to and informational writing|w:howto#2.12(B)", "Letters and thank-you notes|w:letter#2.12(C)", "Opinion texts and research questions|w:opinion#2.9(E), 2.13(A)"]],
       ["Getting ready for Grade 3", ["Reading longer words: syllable types|e:syllables#3.2(A)", "Theme and character motivation|read:theme,character#3.8(A), 3.8(B)", "Central idea and text structure|read:central,structure#3.9(D)", "Compound sentences and dialogue punctuation|e:compound#3.11(D)"]],
     ],
@@ -283,7 +282,9 @@ export const GK_TOPICS = [
   ["days", "Days of the week"], ["months", "Months of the year"], ["calendar", "Reading a calendar"],
   ["seasons", "Seasons"], ["timefacts", "Time facts"], ["coins", "Coins and money"],
   ["measure", "Measuring facts"], ["space", "Earth and space"], ["nature", "Animals and nature"],
-].map(([k, name], i) => ({ id: `gk-${k}`, subject: "gk", grade: "", unit: 0, week: 0, name, op: `g:${k}`, gk: true, n: i }));
+  ["materials", "Materials and their properties", "Science"], ["states", "Solids and liquids", "Science"], ["forces", "Pushes and pulls", "Science"], ["sound", "Sound and vibrations", "Science"],
+  ["citizens", "Good citizens and heroes", "Social studies"], ["symbols", "American and Texas symbols", "Social studies"], ["government", "Leaders, laws and voting", "Social studies"],
+].map(([k, name, group = "Everyday facts"], i) => ({ id: `gk-${k}`, subject: "gk", grade: "", unit: 0, week: 0, name, group, op: `g:${k}`, gk: true, n: i }));
 for (const t of GK_TOPICS) byId[t.id] = t;
 
 export function topic(id) {

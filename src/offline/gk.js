@@ -281,8 +281,94 @@ const nature = bank([
   [3, "How many legs does a spider have?", 8, [], ["Spiders have 8 legs.", "They are arachnids, not insects (insects have 6)."]],
 ]);
 
+/* ---------- science (her class: materials, solids and liquids, pushes and pulls, sound) ---------- */
+const materials = bank([
+  [1, "Which word describes how something feels?", "Rough", ["Red", "Tall", "Three"], ["Texture is how something feels when you touch it.", "Rough, smooth, soft and bumpy are textures."]],
+  [1, "Which material is best for a window you can see through?", "Glass", ["Wood", "Brick", "Cardboard"], ["Glass is transparent: light passes through it.", "That's why windows are made of glass."]],
+  [1, "Which object is flexible (it bends without breaking)?", "A rubber band", ["A rock", "A brick", "A glass cup"], ["Flexible things can bend and stretch.", "A rubber band bends and stretches."]],
+  [1, "Which object is hard?", "A rock", ["A pillow", "A sponge", "A cotton ball"], ["Hard things don't squish when you press them.", "A rock is hard."]],
+  [1, "Which material soaks up water best?", "A sponge", ["A plastic spoon", "A metal key", "A glass marble"], ["Things that soak up water are absorbent.", "A sponge is very absorbent."]],
+  [2, "When you cut a sheet of paper in half, what changes?", "Its size and shape", ["It turns into wood", "It becomes a liquid", "Nothing at all"], ["Cutting changes the size and shape.", "It is still paper."]],
+  [2, "When you fold paper, is it still paper?", "Yes, only its shape changed", ["No, it becomes plastic", "No, it becomes metal", "No, it melts"], ["Folding changes shape, not what it is made of.", "It is still paper."]],
+  [2, "What does sanding do to rough wood?", "Makes it smoother", ["Makes it melt", "Turns it into metal", "Makes it wet"], ["Sandpaper rubs off tiny bits of wood.", "That makes the wood smoother."]],
+  [2, "What happens to an ice cube on a hot day?", "It melts into water", ["It turns into a rock", "It gets bigger", "It turns into sand"], ["Heat makes a solid melt into a liquid.", "Ice melts into water."]],
+  [2, "What happens to water in a freezer?", "It freezes into ice", ["It turns into juice", "It melts", "It disappears"], ["Cold makes a liquid freeze into a solid.", "Water freezes into ice."]],
+  [3, "You want to build a toy boat that floats. Which material is best?", "Plastic or foil", ["Paper towel", "Rocks", "Sugar cubes"], ["A boat needs a material that is waterproof and floats.", "Plastic and foil keep water out; paper towels soak it up."]],
+  [3, "Why is a raincoat made of plastic or rubber?", "They are waterproof", ["They are soft", "They are shiny", "They are heavy"], ["Waterproof materials don't let water through.", "That keeps you dry."]],
+  [3, "Small blocks can be put together to build a tower. What is this called?", "Combining materials to make something new", ["Melting materials", "Freezing materials", "Cutting materials"], ["Parts with different properties can be joined.", "Together they make something new that does a new job."]],
+  [3, "Which change can be undone?", "Melting ice and freezing it again", ["Baking a cake", "Burning paper", "Cooking an egg"], ["Ice melts into water, and water freezes back into ice.", "Baking, burning and cooking can't be undone."]],
+]);
+const states = bank([
+  [1, "Which is a solid?", "A block", ["Milk", "Juice", "Rain"], ["A solid keeps its own shape.", "A block stays a block."]],
+  [1, "Which is a liquid?", "Water", ["A rock", "A spoon", "A book"], ["A liquid flows and can be poured.", "Water is a liquid."]],
+  [1, "Which can you pour?", "Juice", ["A pencil", "An apple", "A shoe"], ["Liquids can be poured.", "Juice is a liquid."]],
+  [2, "What shape does a liquid take?", "The shape of its container", ["Always a square", "Always round", "No shape at all, it disappears"], ["Pour juice into a cup and it fills the cup's shape.", "Pour it into a bowl and it takes the bowl's shape."]],
+  [2, "What does a solid do when you move it to a new box?", "It keeps its own shape", ["It spreads out flat", "It takes the shape of the box", "It turns into a liquid"], ["Solids keep their shape.", "A toy car looks the same in any box."]],
+  [2, "Ice is water as a…", "Solid", ["Liquid", "Gas", "Plant"], ["Ice is frozen water.", "Frozen water is a solid."]],
+  [3, "Steam from a pot of boiling water is water as a…", "Gas", ["Solid", "Liquid", "Rock"], ["Boiling turns liquid water into a gas called water vapor.", "You see steam when it cools a little."]],
+  [3, "Which is matter?", "Everything that takes up space", ["Only things you can eat", "Only liquids", "Only rocks"], ["Matter is anything that has mass and takes up space.", "Solids, liquids and gases are all matter."]],
+  [3, "Chocolate left in a hot car turns soft and runny. It changed from a…", "Solid to a liquid", ["Liquid to a solid", "Gas to a solid", "Liquid to a gas"], ["Heat melts the solid chocolate.", "It becomes a liquid."]],
+]);
+const forces = bank([
+  [1, "Opening a drawer toward you is a…", "Pull", ["Push", "Melt", "Sound"], ["A pull moves something toward you.", "You pull a drawer open."]],
+  [1, "Kicking a ball away from you is a…", "Push", ["Pull", "Freeze", "Vibration"], ["A push moves something away from you.", "A kick is a push."]],
+  [1, "Which is a push?", "Closing a door", ["Pulling a wagon", "Opening a drawer", "Tugging a rope"], ["Closing a door moves it away from you.", "That's a push."]],
+  [2, "What happens when you push a toy car harder?", "It goes faster and farther", ["It stops", "It goes slower", "It turns into a truck"], ["A stronger push gives more force.", "More force makes it go faster and farther."]],
+  [2, "Two bumper cars crash into each other. This is called a…", "Collision", ["Vibration", "Melting", "Shadow"], ["A collision is when moving objects bump into each other.", "Collisions can change how things move."]],
+  [2, "What can a collision do to a moving ball?", "Change its direction", ["Make it a liquid", "Make it invisible", "Turn it into sound only"], ["When a ball hits a wall, it bounces back.", "The collision changed its direction."]],
+  [3, "What pulls things down to the ground?", "Gravity", ["Sound", "Light", "Wind only"], ["Gravity is a pull toward the Earth.", "That's why a dropped ball falls."]],
+  [3, "What can a magnet pull?", "A paper clip", ["A wooden block", "A plastic cup", "A rubber ball"], ["Magnets pull things made of iron or steel.", "Paper clips are steel."]],
+  [3, "Why does a ball roll farther on a smooth floor than on grass?", "Grass has more friction", ["Grass is a liquid", "The floor is magnetic", "Balls dislike grass"], ["Friction is a force that slows things down.", "Rough grass makes more friction than a smooth floor."]],
+]);
+const sound = bank([
+  [1, "What makes sound?", "Vibrations", ["Shadows", "Colors", "Smells"], ["Sound is made when something vibrates (moves back and forth quickly).", "Touch your throat while you hum: you can feel it!"]],
+  [1, "Which body part do we use to hear?", "Ears", ["Eyes", "Nose", "Elbows"], ["Our ears catch sound vibrations.", "That's how we hear."]],
+  [1, "Which is the loudest?", "A fire truck siren", ["A whisper", "A cat purring", "A leaf falling"], ["Loud sounds have big vibrations.", "A siren is very loud."]],
+  [2, "When you hit a drum, what does the top of the drum do?", "It vibrates", ["It melts", "It freezes", "It disappears"], ["The drum top moves back and forth very fast.", "Those vibrations make the sound."]],
+  [2, "When should you use a quiet, inside voice?", "In the library", ["At a soccer game", "On the playground", "Calling for help"], ["Quiet places need soft sounds.", "Loud voices are for outside, games or emergencies."]],
+  [2, "How do you make a drum sound louder?", "Hit it harder", ["Hit it softer", "Paint it", "Look at it"], ["A harder hit makes bigger vibrations.", "Bigger vibrations make a louder sound."]],
+  [3, "A plucked rubber band makes a sound. What happens when it stops moving?", "The sound stops", ["The sound gets louder", "It turns into light", "It makes a smell"], ["No vibration means no sound.", "When it stops vibrating, the sound stops."]],
+  [3, "Why do fire trucks have loud sirens?", "To warn people to move out of the way", ["To play music", "To wake up birds", "To sound pretty"], ["Some sounds have a job.", "A loud siren warns people quickly."]],
+  [3, "A small bell makes a high sound. A big bell makes a…", "Lower sound", ["Higher sound", "Smell", "Light"], ["Big things vibrate more slowly.", "Slower vibrations make lower sounds."]],
+]);
+
+/* ---------- social studies (her class: good citizens, symbols, government) ---------- */
+const citizens = bank([
+  [1, "Which is something a good citizen does?", "Helps clean up the park", ["Throws trash on the ground", "Breaks the rules", "Is mean to others"], ["Good citizens help their community.", "Picking up trash keeps the park nice for everyone."]],
+  [1, "Which shows respect?", "Listening when someone talks", ["Interrupting", "Grabbing toys", "Laughing at a mistake"], ["Respect means treating others the way you want to be treated.", "Listening shows you care."]],
+  [1, "Which is honest?", "Telling the truth", ["Taking something that isn't yours", "Hiding a mistake", "Cheating in a game"], ["Being honest means telling the truth.", "Honesty helps people trust you."]],
+  [2, "Who was Sojourner Truth?", "A woman who spoke out against slavery", ["The first president", "An astronaut", "A famous painter"], ["Sojourner Truth was born enslaved and became free.", "She gave speeches for freedom and fair treatment of women."]],
+  [2, "Paul Revere is famous for…", "A midnight ride to warn that British soldiers were coming", ["Writing the Pledge of Allegiance", "Inventing the light bulb", "Being the first president"], ["In 1775, Paul Revere rode at night to warn colonists.", "He showed courage and cared about his community."]],
+  [2, "Abigail Adams wrote letters asking leaders to…", "Remember women and treat them fairly", ["Build more roads", "Cancel school", "Move to Texas"], ["Abigail Adams was married to John Adams, the second president.", "She asked leaders to \"remember the ladies.\""]],
+  [3, "Who was the first president of the United States?", "George Washington", ["Abraham Lincoln", "Paul Revere", "Benjamin Franklin"], ["George Washington was the first president.", "He is one of the Founding Fathers."]],
+  [3, "Who wrote most of the Declaration of Independence?", "Thomas Jefferson", ["George Washington", "Sojourner Truth", "Paul Revere"], ["Thomas Jefferson wrote most of it in 1776.", "It said the colonies were free from Britain."]],
+  [3, "Which Founding Father was also an inventor who studied electricity?", "Benjamin Franklin", ["George Washington", "Thomas Jefferson", "John Adams"], ["Benjamin Franklin flew a kite in a storm to learn about electricity.", "He also helped write important papers for the new country."]],
+]);
+const symbols = bank([
+  [1, "What are the colors of the United States flag?", "Red, white and blue", ["Green and yellow", "Black and orange", "Purple and pink"], ["The American flag is red, white and blue.", "Texas's flag uses the same colors."]],
+  [1, "What do we say to show respect for the American flag?", "The Pledge of Allegiance", ["Happy Birthday", "The ABCs", "A tongue twister"], ["We stand, face the flag and put our right hand over our heart.", "Then we say the Pledge of Allegiance."]],
+  [1, "How many stars are on the Texas flag?", 1, [], ["The Texas flag has one big star.", "That's why Texas is called the Lone Star State."]],
+  [2, "How many stars are on the American flag?", 50, [], ["There is one star for each state.", "There are 50 states, so 50 stars."]],
+  [2, "How many stripes are on the American flag?", 13, [], ["The 13 stripes stand for the first 13 colonies.", "They are red and white."]],
+  [2, "What is the national bird of the United States?", "Bald eagle", ["Robin", "Mockingbird", "Penguin"], ["The bald eagle stands for strength and freedom.", "It is the national bird."]],
+  [3, "Which statue in New York welcomes people to the United States?", "The Statue of Liberty", ["The Alamo", "Mount Rushmore", "The Liberty Bell"], ["The Statue of Liberty holds up a torch.", "It stands for freedom."]],
+  [3, "What is the Texas state flower?", "Bluebonnet", ["Rose", "Sunflower", "Tulip"], ["Bluebonnets bloom along Texas roads in spring.", "They are the state flower."]],
+  [3, "What is the Texas state bird?", "Mockingbird", ["Bald eagle", "Blue jay", "Cardinal"], ["The mockingbird copies the songs of other birds.", "It is the Texas state bird."]],
+]);
+const government = bank([
+  [1, "Who is the leader of a city or town?", "The mayor", ["The president", "The principal", "The coach"], ["A mayor leads a city or town.", "The mayor helps make the town a good place to live."]],
+  [1, "Who is the leader of our whole country?", "The president", ["The mayor", "The governor", "The librarian"], ["The president leads the United States.", "The president lives and works in the White House."]],
+  [1, "Which is a place the town gives everyone to use?", "A public library", ["Your bedroom", "A friend's backyard", "Your lunchbox"], ["Towns give services to everyone.", "Libraries, parks, fire stations and police help the community."]],
+  [2, "Who is the leader of a state, like Texas?", "The governor", ["The mayor", "The president", "The sheriff"], ["A governor leads a state.", "Texas has a governor who works in Austin."]],
+  [2, "How do citizens choose leaders?", "They vote", ["They flip a coin", "They pick the tallest person", "The leader picks themselves"], ["In an election, citizens vote for the person they want.", "The person with the most votes wins."]],
+  [2, "What are laws?", "Rules everyone in a community must follow", ["Games we play at recess", "Songs about our town", "Kinds of food"], ["Laws keep people safe and treated fairly.", "Leaders make laws; police help people follow them."]],
+  [3, "Who helps put out fires in our town?", "Firefighters", ["Mail carriers", "Bakers", "Bus drivers"], ["Firefighters are community helpers.", "The town pays for fire stations so everyone is safe."]],
+  [3, "How old do you have to be to vote in the United States?", 18, [], ["Citizens can vote when they are 18 years old.", "Kids can practice with a class mock election!"]],
+  [3, "Where does the president live and work?", "The White House", ["The Alamo", "City Hall", "The Capitol in Austin"], ["The White House is in Washington, D.C.", "The president lives and works there."]],
+]);
+
 // Younger kids stay on the easier facts; older kids skip the warm-ups.
 const levelFor = (lvl, grade) => (grade === "K" || grade === "1" ? Math.min(lvl, 2) : Number(grade) >= 4 ? Math.max(lvl, 2) : lvl);
 
-const GEN = { days, months, calendar, seasons, timefacts, coins, measure, space, nature };
+const GEN = { days, months, calendar, seasons, timefacts, coins, measure, space, nature, materials, states, forces, sound, citizens, symbols, government };
 export const gk = (name, lvl, grade) => (GEN[name] ? GEN[name](levelFor(lvl || 1, grade)) : null);

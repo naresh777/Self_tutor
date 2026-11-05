@@ -160,6 +160,7 @@ code{font-family:var(--mono);font-size:.85em;background:var(--idle);padding:1px 
 .gkt{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;border:2px solid var(--line);border-radius:14px;padding:12px;background:var(--paper)}
 .gkt:hover{border-color:var(--sun)}
 .gki{font-size:1.6rem;line-height:1}
+.gkh{font-size:1rem;color:var(--muted);margin-top:4px}
 @media (max-width:420px){.gk{grid-template-columns:1fr 1fr}}
 .weeks{display:flex;flex-direction:column;gap:6px;margin-top:10px}
 .week{display:grid;grid-template-columns:44px 1fr auto;gap:4px 10px;align-items:center;text-align:left;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--paper);width:100%}
