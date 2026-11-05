@@ -225,3 +225,27 @@ label.f{min-width:0;max-width:100%}
 .viz .dash{stroke:var(--ink);stroke-width:1.5;stroke-dasharray:5 5}
 .viz .dotx{font-size:22px;fill:var(--plum)}
 .viz .emo{font-size:34px}.viz .emo.big{font-size:64px}.viz .emo.sm{font-size:28px}
+
+/* tap-to-hear words */
+.w{cursor:pointer;border-radius:4px;transition:background .15s}
+@media (hover:hover){.w:hover{background:var(--idle)}}
+.w.on{background:var(--sun);color:#1d2a44}
+.wordpop{position:absolute;z-index:50;background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:flex;flex-direction:column;align-items:center;gap:6px;max-width:min(320px,calc(100vw - 16px))}
+.wp-word{font-family:var(--display);font-size:2rem;font-weight:800;line-height:1.1}
+.wp-syl{font-family:var(--display);font-size:1.5rem;font-weight:700;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.wp-syl span{background:var(--idle);border-radius:8px;padding:0 8px}.wp-syl i{color:var(--muted);font-style:normal}
+.wp-n{color:var(--muted);font-size:.9rem;font-weight:700}
+.wp-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.wp-btns .btn{padding:6px 12px}
+/* speaker beside each choice */
+.chw{display:flex;gap:6px;align-items:stretch;min-width:0}
+.chw .choice{flex:1;min-width:0}
+.speak.sm{width:36px;height:auto;min-height:36px;border-radius:10px;align-self:center}
+.speak.sm svg{width:18px;height:18px}
+.easybtn.sel{border-color:var(--plum);background:var(--idle)}
+/* easy reading */
+body.easy .q{font-size:1.95rem;line-height:1.55;letter-spacing:.03em;word-spacing:.2em}
+body.easy .passage{font-size:1.3rem;line-height:2;letter-spacing:.03em;word-spacing:.2em;max-height:none}
+body.easy .lesson .lead,body.easy .points li,body.easy .steps li,body.easy .fb{font-size:1.2rem;line-height:1.8;word-spacing:.15em}
+body.easy .choice{font-size:1.35rem;letter-spacing:.02em}
+@media (max-width:520px){body.easy .q{font-size:1.6rem}}

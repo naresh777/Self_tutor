@@ -37,7 +37,7 @@ let current = null; // id of the button that is reading now
 
 const clean = (t) => String(t || "")
   .replace(/×/g, " times ").replace(/÷/g, " divided by ").replace(/−/g, " minus ")
-  .replace(/_{2,}/g, " blank ").replace(/\.(\s*\.)+/g, ".").replace(/\s+/g, " ").trim();
+  .replace(/\p{Extended_Pictographic}\uFE0F?/gu, " ").replace(/_+/g, " blank ").replace(/\/([a-z]{1,3})\//gi, " $1 ").replace(/\.(\s*\.)+/g, ".").replace(/\s+/g, " ").trim();
 
 // Short pieces read more smoothly, stop instantly, and dodge Chrome's cut-off on long text.
 function chunks(text) {
@@ -85,6 +85,23 @@ export function speak(text, id = "_") {
     if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = "en-US";
     u.rate = rate; u.pitch = 1.1;
     if (i === list.length - 1) u.onend = u.onerror = () => { if (current === id) { current = null; sync(); } };
+    speechSynthesis.speak(u);
+  });
+  sync();
+}
+
+// Say a list of pieces one at a time (e.g. the syllables of a word, then the word), slowly.
+export function sayList(parts, rate = 0.6, id = "_word") {
+  parts = parts.map(clean).filter(Boolean);
+  if (!canSpeak || !parts.length) return;
+  speechSynthesis.cancel();
+  const voice = bestVoice(settings().name);
+  current = id;
+  parts.forEach((t, i) => {
+    const u = new SpeechSynthesisUtterance(t);
+    if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = "en-US";
+    u.rate = i === parts.length - 1 && parts.length > 1 ? Math.max(rate, 0.75) : rate; u.pitch = 1.1;
+    if (i === parts.length - 1) u.onend = u.onerror = () => { if (current === id) { current = null; sync(); } };
     speechSynthesis.speak(u);
   });
   sync();
