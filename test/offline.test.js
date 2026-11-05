@@ -1,11 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { year } from "../src/course.js";
+import { year, subjectsFor } from "../src/course.js";
 import { offlineSheet, offlineLesson } from "../src/offline/index.js";
 import { renderVisual } from "../src/visuals.js";
 import { isCorrect } from "../src/check.js";
 
-const topics = () => ["math", "english"].flatMap((s) => ["K", "1", "2", "3", "4", "5", "6", "7", "8"].flatMap((g) => year(s, g).map((t) => [g, t])));
+const topics = () => ["K", "1", "2", "3", "4", "5", "6", "7", "8"].flatMap((g) => subjectsFor(g).flatMap((s) => year(s, g).map((t) => [g, t])));
 
 test("every K–8 topic has a built-in problem type", () => {
   for (const [g, t] of topics()) assert.ok(t.op, `Grade ${g} week ${t.week}: ${t.name}`);
@@ -36,4 +36,19 @@ test("built-in sheets give valid, solvable problems at every level", () => {
       for (const k of ["picture", "visual"]) if (p[k]) assert.ok(renderVisual(p[k]), `${k} in ${j}`);
     }
   }
+});
+
+test("science and social studies banks are well formed and lessons come from them", async () => {
+  const { SCIENCE } = await import("../src/offline/science.js");
+  const { SOCIAL } = await import("../src/offline/social.js");
+  for (const [key, b] of Object.entries({ ...Object.fromEntries(Object.entries(SCIENCE).map(([k, v]) => ["sci:" + k, v])), ...Object.fromEntries(Object.entries(SOCIAL).map(([k, v]) => ["soc:" + k, v])) })) {
+    assert.ok(b.intro && b.tip && b.facts.length >= 4 && b.q.length >= 8, key);
+    for (const line of b.q) {
+      const [qa, why] = line.split(" :: ");
+      const [q, opts] = qa.split(" => ");
+      const parts = opts ? opts.split(" | ") : [];
+      assert.ok(q && why && parts.length >= 3 && new Set(parts).size === parts.length, `${key}: ${line}`);
+    }
+  }
+  for (const s of ["science", "social"]) for (const t of year(s, "2")) assert.ok(offlineLesson(t).points.length >= 4, t.name);
 });

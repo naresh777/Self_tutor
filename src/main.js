@@ -1,5 +1,5 @@
 import "./style.css";
-import { GRADES, SUBJECTS, WEEKS, DAYS, gradeLabel, year, units, topic, isTeks, GK, GK_TOPICS } from "./course.js";
+import { GRADES, SUBJECTS, CORE, subjectsFor, isOptional, WEEKS, DAYS, gradeLabel, year, units, topic, isTeks, GK, GK_TOPICS } from "./course.js";
 import { dayType, TYPE_LABEL, mastery, sheetPlan, extraPlan, advance, isFinished, pace, monthOf } from "./plan.js";
 import { renderVisual } from "./visuals.js";
 import { padCard, mountPad } from "./pad.js";
@@ -19,7 +19,8 @@ const iso = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).p
 const dayKey = (t) => iso(new Date(t));
 const today = () => iso();
 const COLORS = ["#ef6a3a", "#1c9a8c", "#7a5af5", "#d94f8a", "#2f7de1", "#c98a00"];
-const SUBJ_IDS = Object.keys(SUBJECTS);
+// The daily plan covers math and English. Science and social studies are optional tabs (see course.js).
+const SUBJ_IDS = CORE;
 const subjName = (s) => (s === "gk" ? GK.name : SUBJECTS[s]?.name || "");
 const GK_ICON = { days: "🗓️", months: "📆", calendar: "📅", seasons: "🍂", timefacts: "⏰", coins: "🪙", measure: "📏", space: "🌍", nature: "🐸", materials: "🧱", states: "🧊", forces: "🛝", sound: "🥁", citizens: "🤝", symbols: "🇺🇸", government: "🏛️" };
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
@@ -74,15 +75,15 @@ let view = { name: "home" };
 function go(v) { voice.stop(); view = v; render(); window.scrollTo({ top: 0 }); }
 const owl = (size = 44, cls = "") => `<svg class="pip ${cls}" style="width:${size}px;height:${size}px" viewBox="0 0 64 64" aria-hidden="true"><use href="#owl"/></svg>`;
 const avatar = (k, sm) => `<span class="av ${sm ? "sm" : ""}" style="background:${k.color}">${esc((k.name || "?").trim()[0]?.toUpperCase() || "?")}</span>`;
-const header = (right = "") => `<div class="top"><button class="brand" data-go="home" aria-label="Pip Tutor home">${owl(46)}<span><b>Pip Tutor</b><small>Math and English for our family</small></span></button><div class="row">${right}</div></div>`;
+const header = (right = "") => `<div class="top"><button class="brand" data-go="home" aria-label="Pip Tutor home">${owl(46)}<span><b>Pip Tutor</b><small>Math, English and more for our family</small></span></button><div class="row">${right}</div></div>`;
 // A grade whose every weekly topic has built-in lessons and problems works with no key and no internet.
-const builtIn = (grade) => SUBJ_IDS.every((s) => year(s, grade).every((t) => t.op));
+const builtIn = (grade) => subjectsFor(grade).every((s) => year(s, grade).every((t) => t.op));
 const aiBanner = (parent, grades = family.kids.map((k) => k.grade)) => {
   if (ai.aiReady() || !grades.length) return "";
   if (grades.every(builtIn)) return parent ? `<div class="banner">The built-in course is on, so everything works offline. Add a Claude API key in Family settings to also turn on the "Ask Pip" tutor chat, progress notes and fresh new problems.</div>` : "";
   return `<div class="banner">${parent ? "Some grades still need a Claude API key for Pip's lessons, worksheets, quizzes and tests. Add one in Family settings." : "Some of Pip's lessons need a grown-up to add a Claude key in the Parent corner. Number-fact practice still works."}</div>`;
 };
-const subjectTabs = (cur, attr) => `<div class="subjects" role="tablist">${SUBJ_IDS.map((id) => `<button class="subj ${id === cur ? "on" : ""}" ${attr}="${id}" role="tab" aria-selected="${id === cur}">${SUBJECTS[id].name}</button>`).join("")}</div>`;
+const subjectTabs = (cur, attr, grade) => `<div class="subjects" role="tablist">${subjectsFor(grade).map((id) => `<button class="subj ${id === cur ? "on" : ""}" ${attr}="${id}" role="tab" aria-selected="${id === cur}">${SUBJECTS[id].name}</button>`).join("")}</div>`;
 const typePill = (type) => `<span class="pill type-${type}">${TYPE_LABEL[type]}</span>`;
 
 const questionText = (p) => p.question + (p.type === "choice" ? ". " + p.choices.join(". ") : "");
@@ -123,7 +124,7 @@ const addKidForm = () => `<form id="addkid" class="row" style="align-items:flex-
 function kidView() {
   const k = getKid(view.kid); if (!k) return homeView();
   const c = course(k), pos = c.pos;
-  const subject = (view.subject = SUBJECTS[view.subject] ? view.subject : "math");
+  const subject = (view.subject = subjectsFor(k.grade).includes(view.subject) ? view.subject : "math");
   const st = streak(k.id), stars = family.stars[k.id] || 0;
   let today_;
   if (isFinished(pos)) {
@@ -149,7 +150,7 @@ function kidView() {
   ${today_}</div>
   ${gkCard(k)}
   <div class="card"><div class="row spread"><h2>My course map</h2><span class="muted small">Tap a week you've reached for extra practice</span></div>
-  ${subjectTabs(subject, "data-subject")}${courseMap(k, subject, false)}</div>`;
+  ${subjectTabs(subject, "data-subject", k.grade)}${isOptional(subject) ? `<p class="small muted">Explore any week, any time! The first time you open a week, Pip starts with a short lesson.</p>` : ""}${courseMap(k, subject, false)}</div>`;
 }
 
 function gkCard(k) {
@@ -164,10 +165,10 @@ function courseMap(k, subject, parent) {
   return `<div class="units">${units(subject, k.grade).map((u) => {
     const test = tests.filter((l) => u.topics.some((t) => t.week === l.week)).at(-1);
     const current = u.topics.some((t) => t.week === pos.week);
-    const reached = u.topics[0].week <= pos.week;
+    const reached = u.topics[0].week <= pos.week || isOptional(subject);
     return `<details class="unit ${reached ? "" : "later"}" ${current ? "open" : ""}><summary><span class="ut">Unit ${u.unit}: ${esc(u.title)}</span>${test ? `<span class="pill ${test.correct / test.total >= 0.8 ? "good" : test.correct / test.total >= 0.6 ? "warn" : "bad"}">Test ${pct(test.correct, test.total)}%</span>` : current ? `<span class="pill focus">Now</span>` : ""}</summary>
     <div class="weeks">${u.topics.map((t) => {
-      const p = peek(t.id), st = status(p), here = t.week === pos.week, open = t.week <= pos.week;
+      const p = peek(t.id), st = status(p), here = t.week === pos.week, open = t.week <= pos.week || isOptional(subject);
       const tag = here ? `<span class="pill focus">This week</span>` : p.attempts ? `<span class="pill ${st.cls}">${st.label}${st.k !== "new" ? " · " + Math.round(mastery(p) * 100) + "%" : ""}</span>` : open ? "" : `<span class="pill">Week ${t.week}</span>`;
       const inner = `<span class="wk">W${t.week}</span><span class="nm">${esc(t.name)}${t.bridge ? ` <span class="small muted">(${gradeLabel(t.grade)} preview)</span>` : ""}${parent && t.teks ? ` <span class="small muted">TEKS ${esc(t.teks)}</span>` : ""}</span>${tag}`;
       return open && !parent ? `<button class="week" data-extra="${t.id}">${inner}</button>` : `<div class="week ${open ? "" : "later"}">${inner}${parent && p.attempts ? `<span class="small muted wkd">${p.correct}/${p.attempts} right overall</span>` : ""}</div>`;
@@ -182,14 +183,16 @@ async function startSheet(kidId, subject, kind, slot, topicId) {
   const k = getKid(kidId), peek = peekFor(kidId);
   const plan = kind === "extra" ? extraPlan(topic(topicId), peek) : sheetPlan(subject, k.grade, slot.week, slot.day, peek);
   const main = plan.items[0].topic;
-  view = { name: "sheet", kid: kidId, subject, kind: plan.type, slot, topicId: main.id, unit: main.unit, state: "loading", phase: plan.type === "learn" ? "lesson" : "q", i: 0, results: [], started: Date.now(), probs: [], tries: [], chat: [], shown: 0, fb: null, sel: null, offline: false };
+  // An optional subject's week opens with its lesson the first time.
+  const withLesson = plan.type === "learn" || (kind === "extra" && isOptional(main.subject) && !peek(main.id).attempts);
+  view = { name: "sheet", kid: kidId, subject, kind: plan.type, slot, topicId: main.id, unit: main.unit, state: "loading", phase: withLesson ? "lesson" : "q", i: 0, results: [], started: Date.now(), probs: [], tries: [], chat: [], shown: 0, fb: null, sel: null, offline: false };
   render();
   const myView = view;
   const misses = kidLog(kidId).filter((l) => plan.items.some((it) => (l.byTopic || {})[it.topic.id])).flatMap((l) => l.misses || []).slice(-4).map((m) => m.q);
   try {
     // General knowledge always uses the built-in facts, which are checked and kid-sized.
     if (!ai.useClaude() || subject === "gk") throw { code: "no_key" };
-    const lessonP = plan.type === "learn" ? (family.lessons[main.id] ? Promise.resolve(family.lessons[main.id]) : ai.makeLesson(main)) : null;
+    const lessonP = withLesson ? (family.lessons[main.id] ? Promise.resolve(family.lessons[main.id]) : ai.makeLesson(main)) : null;
     const [probs, lesson] = await Promise.all([ai.makeSheet(subject, k.grade, plan.type, plan.items, misses), lessonP]);
     if (view !== myView) return;
     if (lesson) { family.lessons[main.id] = lesson; save(); }
@@ -198,7 +201,7 @@ async function startSheet(kidId, subject, kind, slot, topicId) {
     if (view !== myView) return;
     // The built-in course: problems made on the device, and a written lesson (or one Pip wrote earlier).
     const local = offlineSheet(plan.items, k.grade);
-    const lesson = plan.type === "learn" ? family.lessons[main.id] || offlineLesson(main) : null;
+    const lesson = withLesson ? family.lessons[main.id] || offlineLesson(main) : null;
     if (local.length) Object.assign(view, { probs: local, offline: true, state: "ready", phase: lesson ? "lesson" : "q", lesson });
     else Object.assign(view, { state: "error", err: e?.code });
   }
@@ -413,7 +416,7 @@ function parentView() {
   if (!kids.length) return header(right) + aiBanner(true) + `<div class="card"><h1>Parent corner</h1><p>Add a child first.</p>${addKidForm()}</div>`;
   const kid = getKid(view.pk) || kids[0]; view.pk = kid.id;
   const c = course(kid), pos = c.pos, pc = pace(c);
-  const subject = (view.psub ||= "math");
+  const subject = (view.psub = subjectsFor(kid.grade).includes(view.psub) ? view.psub : "math");
   const week = Date.now() - 7 * 864e5, L = kidLog(kid.id), LW = L.filter((l) => l.at >= week);
   const sum = (arr, f) => arr.reduce((a, l) => a + (l[f] || 0), 0);
   const probs = sum(LW, "total"), corr = sum(LW, "correct"), mins = sum(LW, "mins");
@@ -441,7 +444,7 @@ function parentView() {
   </div>
   <div class="card"><h2>Monthly tests</h2>${testMonths.length ? `<div class="tablewrap"><table><thead><tr><th>Month</th>${SUBJ_IDS.map((s) => `<th>${SUBJECTS[s].name}</th>`).join("")}</tr></thead><tbody>${testMonths.map((m) => `<tr><td>Month ${m} <span class="small muted">(weeks ${m * 4 - 3} to ${m * 4})</span></td>${SUBJ_IDS.map((s) => `<td>${scoreCell(tests.filter((l) => l.week && monthOf(l.week) === m && l.subject === s).at(-1))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted">The first monthly test comes at the end of week 4. Each test covers the last four weeks, and scores for every month show up here.</p>`}
   <h3>Weekly quizzes</h3>${quizWeeks.length ? `<div class="tablewrap"><table><thead><tr><th>Week</th>${SUBJ_IDS.map((s) => `<th>${SUBJECTS[s].name}</th>`).join("")}</tr></thead><tbody>${quizWeeks.map((w) => `<tr><td>Week ${w}</td>${SUBJ_IDS.map((s) => `<td>${scoreCell(quizzes.filter((l) => l.week === w && l.subject === s).at(-1))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted small">Friday quizzes show up here.</p>`}</div>
-  <div class="card"><div class="row spread"><h2>Course map</h2><span class="muted small">How each week's topic is going</span></div>${subjectTabs(subject, "data-psub")}${courseMap(kid, subject, true)}</div>
+  <div class="card"><div class="row spread"><h2>Course map</h2><span class="muted small">How each week's topic is going</span></div>${subjectTabs(subject, "data-psub", kid.grade)}${courseMap(kid, subject, true)}</div>
   <div class="card"><h2>Course settings for ${esc(kid.name)}</h2>
   <p class="muted small">Pace compares finished school days (Monday to Friday) with the days since the course start date. If ${esc(kid.name)} started school before using Pip, set the start date to the first day of school and move to the week that matches what the class is doing now.</p>
   <form id="courseform" class="row" style="align-items:flex-end">

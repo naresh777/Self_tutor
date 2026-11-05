@@ -14,7 +14,14 @@ export const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 export const SUBJECTS = {
   math: { name: "Math", color: "var(--teal)" },
   english: { name: "English", color: "var(--plum)" },
+  // Optional subjects: a full year to explore any time, outside the daily plan, for the grades listed.
+  science: { name: "Science", color: "var(--good)", optional: true, grades: ["2"] },
+  social: { name: "Social studies", color: "var(--sun)", optional: true, grades: ["2"] },
 };
+// Math and English make up the daily plan. Science and social studies are extra tabs where available.
+export const CORE = ["math", "english"];
+export const subjectsFor = (grade) => Object.keys(SUBJECTS).filter((s) => !SUBJECTS[s].grades || SUBJECTS[s].grades.includes(grade));
+export const isOptional = (s) => !!SUBJECTS[s]?.optional;
 
 const SCOPE = {
   math: {
@@ -217,11 +224,40 @@ const SCOPE = {
       ["Writing", ["Argument essays|e:wm:arg", "Explanatory essays|e:wm:inform", "Narratives with reflection|e:wm:narr", "Year review|mix:read:theme,argument+e:voice+e:mood+e:verbals+e:punct8+e:res:cite+e:wm:arg"]],
     ],
   },
+  science: {
+    // Grade 2: weeks 1-11 follow her class (Prosper ISD weekly notes), then the Texas science TEKS.
+    2: [
+      ["Matter and its properties", ["Physical properties: color, shape, texture and weight|mix:sci:props+sci:props+g:materials", "Solids and liquids|mix:sci:solidliquid+sci:solidliquid+g:states", "Changing materials by cutting and folding|sci:cutfold", "Changing materials by sanding|sci:sanding"]],
+      ["Changing and combining matter", ["Melting and freezing|sci:meltfreeze", "Combining materials to make something new|sci:combine", "Plan, build, test and record: the design process|sci:design"]],
+      ["Forces and sound", ["Pushes and collisions|mix:sci:pushcollide+sci:pushcollide+g:forces", "Pushes and pulls change motion|mix:sci:pushpull+sci:pushpull+g:forces", "Sound comes from vibrations|mix:sci:vibrate+sci:vibrate+g:sound", "Loud and soft sounds|mix:sci:loudsoft+sci:loudsoft+g:sound"]],
+      ["Magnets, heat and light", ["Magnets attract and repel|sci:magnets", "Heat energy: warming and cooling|sci:heat", "Light and shadows|sci:light"]],
+      ["Weather and sky", ["Measuring weather: thermometers and rain gauges|sci:weather", "Weather patterns and the four seasons|sci:seasons", "Clouds, rain and the water cycle|sci:watercycle", "The sun, moon and stars|sci:sky"]],
+      ["Earth's resources", ["Rocks, soil and water|sci:resources", "Slow and fast changes to the land|sci:landchange", "Reduce, reuse, recycle|sci:conserve"]],
+      ["Plants", ["Living and nonliving things|sci:living", "Parts of a plant and their jobs|sci:plantparts", "What plants need to grow|sci:plantneeds", "The life cycle of a plant|sci:plantcycle"]],
+      ["Animals and habitats", ["Animal life cycles: butterflies and frogs|sci:animalcycle", "Animal body parts that help them live|sci:animalparts", "Habitats|sci:habitats", "Food chains|sci:foodchain", "Plants and animals depend on each other|sci:depend"]],
+      ["Thinking like a scientist", ["Science tools and safety|sci:tools", "Observing, measuring and recording data|sci:data", "Science year review|mix:sci:review+sci:review+sci:props+sci:pushpull+sci:weather+sci:plantparts+sci:habitats"]],
+      ["Getting ready for Grade 3", ["Forms of energy: light, heat, sound and motion|sci:energy3", "The sun, Earth, moon and planets|sci:space3", "When environments change|sci:eco3"]],
+    ],
+  },
+  social: {
+    // Grade 2: weeks 1-11 follow her class (Prosper ISD weekly notes), then the Texas social studies TEKS.
+    2: [
+      ["Good citizens", ["What makes a good citizen|mix:soc:citizen+soc:citizen+g:citizens", "Sojourner Truth|soc:sojourner", "Abigail Adams and Paul Revere|soc:adamsrevere", "The Pledge, the U.S. flag and the Texas flag|mix:soc:flags+soc:flags+g:symbols"]],
+      ["Our country and its symbols", ["Freedom Week and the Founding Fathers|soc:founders", "American symbols and landmarks|mix:soc:symbols+soc:symbols+g:symbols"]],
+      ["Government and leaders", ["Government and the mayor|mix:soc:govmayor+soc:govmayor+g:government", "Leaders: mayor, governor and president|mix:soc:leaders+soc:leaders+g:government", "Rules and laws|soc:laws", "Voting and elections|mix:soc:voting+soc:voting+g:government"]],
+      ["Our community's past", ["The history of Prosper|soc:prosper", "Past and present: how life has changed|soc:pastpresent", "Timelines|soc:timeline", "Holidays we celebrate and why|soc:holidays"]],
+      ["Maps and geography", ["Maps and map keys|soc:maps", "Cardinal directions and the compass rose|soc:directions", "The globe, continents and oceans|soc:globe", "Landforms and bodies of water|soc:landforms"]],
+      ["People and places", ["Where we live: town, state, country|soc:wherelive", "How people adapt to weather and land|soc:adapt", "Natural resources and how we use them|soc:natresources"]],
+      ["Economics", ["Needs and wants|soc:needswants", "Goods and services|soc:goodsservices", "Producers and consumers|soc:producers", "Jobs and community helpers|soc:jobs", "Earning, saving and spending|soc:money", "From the farm to your table|soc:farmtable"]],
+      ["Culture and change", ["Families and traditions|soc:traditions", "Celebrating cultures|soc:cultures", "Inventors and inventions|soc:inventors", "How technology changed travel and talking|soc:techchange", "Heroes from history|soc:heroes", "Social studies year review|mix:soc:review+soc:review+soc:citizen+soc:leaders+soc:maps+soc:needswants+soc:goodsservices"]],
+      ["Getting ready for Grade 3", ["Urban, suburban and rural communities|soc:communities3", "Map scales and grids|soc:scale3", "Taking part in your community|soc:civic3"]],
+    ],
+  },
 };
 
 // Grades written week by week against the Texas TEKS, including their own preview of next year.
-export const TEKS = { math: ["2", "3"], english: ["2", "3"] };
-export const isTeks = (subject, grade) => TEKS[subject].includes(grade);
+export const TEKS = { math: ["2", "3"], english: ["2", "3"], science: ["2"], social: ["2"] };
+export const isTeks = (subject, grade) => !!TEKS[subject]?.includes(grade);
 
 function parse(raw) {
   const [head, teks] = raw.split("#");

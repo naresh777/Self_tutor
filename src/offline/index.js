@@ -13,6 +13,8 @@ import { EN_MIDDLE } from "./english-middle.js";
 import { EN_CLASS } from "./english-class.js";
 import { LESSONS } from "./lessons.js";
 import { gk } from "./gk.js";
+import { SCIENCE } from "./science.js";
+import { SOCIAL } from "./social.js";
 
 const PASSAGES = [...EARLY_PASSAGES, ...LATER, ...UPPER_PASSAGES, ...MIDDLE_PASSAGES];
 const EN_ALL = { ...EN, ...EN_EARLY, ...EN_UPPER, ...EN_MIDDLE, ...EN_CLASS };
@@ -36,10 +38,35 @@ function readSet(skills, count, grade) {
   return out;
 }
 
+// Science and social studies banks: "question => answer | wrong | wrong :: why" lines, one bank per week.
+const BANKS = { sci: SCIENCE, soc: SOCIAL };
+const parseQ = (line) => {
+  const [qa, why = ""] = line.split(" :: ");
+  const [q, opts] = qa.split(" => ");
+  const [a, ...ws] = opts.split(" | ");
+  return { q, a, ws, why };
+};
+const bankOf = (op) => { const [kind, key] = op.split(":"); return BANKS[kind]?.[key]; };
+function fromBank(op) {
+  const b = bankOf(op);
+  if (!b) return null;
+  const { q, a, ws, why } = parseQ(pick(b.q));
+  return choice(q, a, ws, [why], { hint: pick(b.facts) });
+}
+// A built-in lesson for a science or social studies week, written from its bank.
+function bankLesson(t) {
+  const op = (t.op || "").replace(/^mix:/, "").split("+").find((o) => /^(sci|soc):/.test(o));
+  const b = op && bankOf(op);
+  if (!b) return null;
+  const { q, a, why } = parseQ(b.q[0]);
+  return { title: t.name, intro: b.intro, points: b.facts, example: { problem: q, steps: [why, `The answer is: ${a}`], visual: null }, tip: b.tip };
+}
+
 // One problem for an op like "add3", "e:prefix:3", "w:letter", "read:theme" or "mix:a+b".
 export function one(op, lvl, grade) {
   if (op.startsWith("mix:")) return one(pick(op.slice(4).split("+")), lvl, grade);
   if (op.startsWith("g:")) return gk(op.slice(2), lvl, grade);
+  if (/^(sci|soc):/.test(op)) return fromBank(op);
   if (op.startsWith("read:")) return readSet(op.slice(5).split(","), 1, grade)[0];
   if (op.startsWith("w:")) return EN.write(lvl, op.slice(2));
   if (op.startsWith("e:")) { const [name, arg] = op.slice(2).split(":"); return EN_ALL[name](lvl, arg); }
@@ -68,4 +95,4 @@ export function offlineSheet(items, grade) {
 
 // A lesson keyed "subject:grade:name" wins over one keyed by name alone, for names used in more than one course.
 // The grade in the key is the course the week belongs to (from its id), even for a preview of next year.
-export const offlineLesson = (t) => LESSONS[`${String(t.id).split("-").slice(0, 2).join(":")}:${t.name}`] || LESSONS[t.name] || null;
+export const offlineLesson = (t) => LESSONS[`${String(t.id).split("-").slice(0, 2).join(":")}:${t.name}`] || LESSONS[t.name] || bankLesson(t) || null;
