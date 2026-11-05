@@ -3,10 +3,19 @@ const KEY = "pip-tutor-family-v1";
 
 const blank = () => ({ kids: [], pin: "", progress: {}, log: [], stars: {}, done: {}, lessons: {}, updated: 0 });
 
+// Bump when built-in weeks change, so lessons Claude wrote for the old topics are made fresh.
+// 2: Grade 2 English and math follow the class order.
+const COURSE = 2;
+function migrate(f) {
+  if ((f.course || 1) < 2) for (const id of Object.keys(f.lessons || {})) if (/^(english|math)-2-/.test(id)) delete f.lessons[id];
+  f.course = COURSE;
+  return f;
+}
+
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? { ...blank(), ...JSON.parse(raw) } : blank();
+    return raw ? migrate({ ...blank(), ...JSON.parse(raw) }) : { ...blank(), course: COURSE };
   } catch {
     return blank();
   }
@@ -23,6 +32,7 @@ export function save() {
 function replaceWith(data) {
   for (const k of Object.keys(family)) delete family[k];
   Object.assign(family, blank(), data);
+  migrate(family);
   save();
 }
 

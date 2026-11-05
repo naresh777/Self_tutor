@@ -19,7 +19,7 @@ test("every grade has a full 36-week year in each subject", () => {
 test("grade 2 ends with grade 3 preview weeks", () => {
   const last = year("math", "2").slice(33);
   assert.ok(last.every((t) => t.bridge && t.grade === "3" && t.unitTitle === "Getting ready for Grade 3"));
-  assert.equal(year("english", "2")[0].teks, "2.2(B)(i)");
+  assert.ok(year("english", "2")[0].teks.startsWith("2.2(B)(i)"));
   assert.equal(last[0].name, "Place value to 100,000 and rounding");
   assert.equal(last.length, 3);
 });

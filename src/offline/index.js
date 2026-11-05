@@ -10,11 +10,12 @@ import { UPPER_PASSAGES } from "./passages-upper.js";
 import { EN_UPPER } from "./english-upper.js";
 import { MIDDLE_PASSAGES } from "./passages-middle.js";
 import { EN_MIDDLE } from "./english-middle.js";
+import { EN_CLASS } from "./english-class.js";
 import { LESSONS } from "./lessons.js";
 import { gk } from "./gk.js";
 
 const PASSAGES = [...EARLY_PASSAGES, ...LATER, ...UPPER_PASSAGES, ...MIDDLE_PASSAGES];
-const EN_ALL = { ...EN, ...EN_EARLY, ...EN_UPPER, ...EN_MIDDLE };
+const EN_ALL = { ...EN, ...EN_EARLY, ...EN_UPPER, ...EN_MIDDLE, ...EN_CLASS };
 const recent = [];
 // Questions from passages that practice these skills, sharing as few passages as possible.
 function readSet(skills, count, grade) {

@@ -536,6 +536,43 @@ G.est = (lvl) => {
   return num(`Estimate ${a} ${plus ? "+" : "−"} ${b} by rounding each number to the nearest ${p === 10 ? "ten" : "hundred"} first.`, ans, [`${a} rounds to ${ra}.`, `${b} rounds to ${rb}.`, `${ra} ${plus ? "+" : "−"} ${rb} = ${ans}.`], { hint: `Round each number first, then ${plus ? "add" : "subtract"}.` });
 };
 
+/* ---------------- her class's order: even and odd, skip counting on number lines, polygons, area ---------------- */
+G.evenodd = (lvl) => {
+  const k = rnd(0, 3), n = rnd(lvl === 1 ? 2 : 6, lvl === 1 ? 20 : lvl === 2 ? 99 : 999);
+  if (k === 0 || (lvl === 1 && k === 3)) {
+    const m = rnd(2, 20);
+    return choice(`Put ${m} cubes into pairs. Is ${m} even or odd?`, m % 2 ? "odd" : "even", [m % 2 ? "even" : "odd"], ["Make pairs (groups of 2).", m % 2 ? `${Math.floor(m / 2)} pairs and 1 left over, so ${m} is odd.` : `${m / 2} pairs and none left over, so ${m} is even.`], { keepOrder: ["even", "odd"], visual: { type: "tenframe", filled: m } });
+  }
+  if (k === 1) return choice(`Is ${n} even or odd?`, n % 2 ? "odd" : "even", [n % 2 ? "even" : "odd"], ["Only the ones digit matters.", "Even numbers end in 0, 2, 4, 6 or 8. Odd numbers end in 1, 3, 5, 7 or 9.", `${n} ends in ${n % 10}, so it is ${n % 2 ? "odd" : "even"}.`], { keepOrder: ["even", "odd"] });
+  if (k === 2) {
+    const want = rnd(0, 1) ? "even" : "odd", base = rnd(1, 9) * 10;
+    const right = base + (want === "even" ? pick([0, 2, 4, 6, 8]) : pick([1, 3, 5, 7, 9]));
+    const wrongs = sample([1, 3, 5, 7, 9, 0, 2, 4, 6, 8].filter((d) => (d % 2 === 0) !== (want === "even")), 3).map((d) => base + d);
+    return choice(`Which number is ${want}?`, right, wrongs, ["Look at the ones digit.", `${right} ends in ${right % 10}, so it is ${want}.`]);
+  }
+  const m = rnd(3, 15) * 2 + rnd(0, 1);
+  return num(`${m} kids line up in pairs. How many kids are left without a partner?`, m % 2, ["Make pairs of 2.", m % 2 ? `${(m - 1) / 2} pairs and 1 kid left over (odd).` : `${m / 2} pairs and nobody left over (even).`]);
+};
+G.skipnl = (lvl) => {
+  const step = pick(lvl === 1 ? [2, 5, 10] : lvl === 2 ? [5, 10, 100] : [2, 5, 10, 25, 100]);
+  const start = step * rnd(0, step === 100 ? 7 : 12), seq = Array.from({ length: 6 }, (_, i) => start + step * i), hole = rnd(2, 4);
+  if (rnd(0, 1)) return num(`Skip count by ${step}s. What number is missing?\n${seq.map((x, i) => (i === hole ? "___" : x)).join(", ")}`, seq[hole], [`Each number is ${step} more than the one before.`, `${seq[hole - 1]} + ${step} = ${seq[hole]}.`]);
+  return num(`The number line counts by ${step}s. What number goes at the "?"`, seq[hole], [`Find the pattern: the numbers go up by ${step}.`, `${seq[hole - 1]} + ${step} = ${seq[hole]}.`], { picture: { type: "numberline", start: seq[0], end: seq[5], step, ask: seq[hole], labels: [seq[0], seq[1], seq[hole + 1] ?? seq[5]] } });
+};
+G.polyreg = (lvl) => {
+  const k = rnd(0, 3);
+  if (k === 0) { const n = pick([3, 4, 5, 6, 8]); return choice("Is this shape a regular polygon?", "yes", ["no"], ["A regular polygon has all sides the same length and all angles the same.", `All ${n} sides are equal, so yes, it is regular.`], { keepOrder: ["yes", "no"], picture: { type: "polygon", sides: n } }); }
+  if (k === 1) { const kind = pick(["rectangle", "trapezoid", "kite", "parallelogram"]); return choice("Is this shape a regular polygon?", "no", ["yes"], ["A regular polygon has all sides the same length.", `This ${kind}'s sides are not all the same length, so it is irregular.`], { keepOrder: ["yes", "no"], picture: { type: "polygon", kind } }); }
+  if (k === 2) return choice("What makes a polygon regular?", "All its sides and angles are the same", ["It has 4 sides", "It is very big", "It has curved sides"], ["Regular means all sides are equal and all angles are equal.", "A square is a regular quadrilateral; a rectangle is not."]);
+  return choice("Which of these is NOT a polygon?", "circle", ["triangle", "hexagon", "square"], ["A polygon is a closed shape made of straight sides.", "A circle is curved, so it is not a polygon."]);
+};
+G.area2 = (lvl) => {
+  const r = rnd(2, lvl === 1 ? 3 : 5), c = rnd(2, lvl === 1 ? 5 : 7), k = rnd(0, 2);
+  if (k < 2) return num("How many square units cover this rectangle?", r * c, [`Count the squares in each row: ${c}.`, `There are ${r} rows: ${Array(r).fill(c).join(" + ")} = ${r * c}.`, `The area is ${r * c} square units.`], { picture: { type: "area", rows: r, cols: c } });
+  const r2 = r + 1, a = r * c, b = r2 * c;
+  return choice(`Rectangle A is ${r} rows of ${c} squares. Rectangle B is ${r2} rows of ${c} squares. Which covers more space?`, "Rectangle B", ["Rectangle A", "They are the same"], ["Area is how many square units cover a shape.", `A: ${a} square units. B: ${b} square units.`, "B has more."], { keepOrder: ["Rectangle A", "Rectangle B", "They are the same"] });
+};
+
 /* ---------------- reviews ---------------- */
 G.mix = (lvl, arg) => {
   const ops = String(arg || "add3,sub3").split("+");
