@@ -1,0 +1,105 @@
+/* Brain Gym: games, movement and routine checklists. Uses the app's color tokens. */
+.bg-chip{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.9rem}
+.bg-big{font-size:2.4rem;line-height:1}
+.bg-routines{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.bg-routine{display:flex;flex-direction:column;align-items:center;gap:4px;border:2px solid var(--line);border-radius:14px;background:var(--card);padding:12px}
+.bg-routine span:first-child{font-size:1.8rem}
+.bg-routine.done{border-color:var(--good);background:var(--good-bg)}
+.bg-routine:hover{border-color:var(--accent)}
+.bg-top h2{font-size:1.3rem}
+.bg-stage{display:flex;flex-direction:column;gap:14px;min-height:340px;position:relative}
+.bg-steps{display:flex;gap:6px;flex-wrap:wrap}
+.bg-steps span{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line);font-size:1.1rem;opacity:.55}
+.bg-steps span.cur{border-color:var(--accent);opacity:1;transform:scale(1.1)}
+.bg-steps span.done{border-color:var(--good);background:var(--good-bg);opacity:1}
+.bg-title{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:24px 0}
+.bg-title>span{font-size:3.5rem;line-height:1}
+.bg-intro{display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;padding:16px 0}
+.bg-how{font-size:1.2rem;max-width:560px}
+.bg-grey{color:var(--muted)}
+.bg-hud{display:flex;justify-content:space-between;gap:12px;font-weight:800;font-family:var(--display);font-size:1.1rem}
+.bg-dots{display:flex;gap:6px;justify-content:center}
+.bg-dots i{width:12px;height:12px;border-radius:50%;background:var(--idle)}
+.bg-dots i.cur{background:var(--sun)}.bg-dots i.win{background:var(--good)}.bg-dots i.miss{background:var(--bad)}
+.bg-say{text-align:center;font-family:var(--display);font-weight:800;font-size:1.3rem;min-height:1.6em}
+.bg-flash{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);padding:14px 24px;border-radius:16px;font-family:var(--display);font-weight:800;font-size:1.4rem;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.18);z-index:5;max-width:90%;animation:bgpop .2s ease-out}
+.bg-flash.good{background:var(--good-bg);color:var(--good)}.bg-flash.bad{background:var(--bad-bg);color:var(--bad)}
+@keyframes bgpop{from{transform:translate(-50%,-50%) scale(.7);opacity:0}}
+/* Star Catcher */
+.bg-field{position:relative;height:min(60vh,440px);border:2px dashed var(--line);border-radius:16px;overflow:hidden;touch-action:manipulation;background:linear-gradient(var(--card),var(--paper))}
+.bg-fall{position:absolute;top:-60px;font-size:2.6rem;line-height:1;background:none;border:0;padding:8px;animation:bgfall linear forwards;user-select:none;-webkit-user-select:none}
+.bg-fall.grey{filter:grayscale(1) brightness(.9);opacity:.75}
+.bg-fall.got{transform:scale(1.6);opacity:0;transition:.2s}
+.bg-fall.wrong{filter:hue-rotate(160deg)}
+@keyframes bgfall{to{top:100%}}
+/* Pip's Path */
+.bg-grid{display:grid;gap:10px;margin:0 auto;width:min(100%,360px)}
+.bg-grid.g3{grid-template-columns:repeat(3,1fr)}.bg-grid.g4{grid-template-columns:repeat(4,1fr)}
+.bg-cell{aspect-ratio:1;border-radius:14px;border:2px solid var(--line);background:var(--idle);font-family:var(--display);font-weight:800;font-size:1.6rem;transition:background .1s,transform .1s}
+.bg-cell.lit{background:var(--sun);border-color:var(--sun);transform:scale(1.05)}
+.bg-cell.wrong{background:var(--bad);border-color:var(--bad)}
+.bg-cell[disabled]{cursor:default;opacity:1}
+/* Pair Match */
+.bg-cards{display:grid;gap:8px;width:min(100%,520px);margin:0 auto}
+.bg-card{aspect-ratio:3/4;border-radius:12px;border:2px solid var(--plum);background:var(--plum);font-size:2rem;display:grid;place-items:center;padding:0}
+.bg-card span{visibility:hidden}
+.bg-card.up{background:var(--card)}.bg-card.up span{visibility:visible}
+.bg-card.done{border-color:var(--good);background:var(--good-bg)}
+/* Rhythm */
+.bg-drums{display:flex;gap:24px;justify-content:center}
+.bg-drum{width:130px;height:130px;border-radius:50%;border:4px solid var(--line);background:var(--card);font-size:3.4rem;touch-action:manipulation;transition:transform .08s}
+.bg-drum.lit{transform:scale(1.12);border-color:var(--sun)}
+.bg-drum[disabled]{opacity:.7;cursor:default}
+.bg-beat{text-align:center;font-size:1.5rem;min-height:1.6em;letter-spacing:4px}
+/* Robot Chef + Picnic */
+.bg-chef{display:flex;flex-direction:column;align-items:center;gap:12px}
+.bg-bowl{font-size:3.6rem;display:flex;flex-direction:column;align-items:center;border-radius:50%;padding:8px 18px}
+.bg-bowl small{font-size:.9rem;font-weight:800}
+.bg-bowl.red{background:#fde2e2;color:#b42318}.bg-bowl.blue{background:#dbeafe;color:#1d4ed8}
+.bg-recipe{border:2px solid var(--line);border-radius:14px;padding:12px 18px;font-size:1.15rem;max-width:520px}
+.bg-recipe ol{margin:6px 0 0;padding-left:22px}
+.bg-added{min-height:2.4rem;font-size:1.8rem;text-align:center;letter-spacing:2px;word-break:break-all}
+.bg-pantry{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:560px;margin:0 auto}
+.bg-food{width:64px;height:64px;border-radius:14px;border:2px solid var(--line);background:var(--card);font-size:2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;padding:0}
+.bg-pantry.big .bg-food{width:72px;height:72px;font-size:2.3rem}
+.bg-food.act{border-color:var(--teal)}
+.bg-food small{font-size:.65rem;font-weight:800;margin-top:2px}
+.bg-food:active{transform:scale(.94)}
+.bg-food.sel{border-color:var(--accent);background:var(--warn-bg);box-shadow:0 0 0 3px var(--accent)}
+.bg-new{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0;font-size:1.3rem}
+.bg-new span{font-size:5rem;line-height:1;animation:bgpop2 .3s ease-out}
+@keyframes bgpop2{from{transform:scale(.3)}}
+/* Switch Sort */
+.bg-rule{background:var(--sun);color:#3b2a00;border-radius:999px;padding:2px 12px}
+.bg-sortcard{display:grid;place-items:center;padding:16px;border:2px dashed var(--line);border-radius:16px;width:150px;margin:0 auto}
+.bg-bins{display:flex;gap:16px;justify-content:center}
+.bg-bin{display:flex;flex-direction:column;align-items:center;gap:4px;border:3px solid var(--ink);border-radius:16px;background:var(--card);padding:12px 18px;min-width:130px;font-weight:800}
+.bg-switch{font-family:var(--display);font-size:1.6rem;text-align:center;padding:40px 0;font-weight:800;color:var(--accent)}
+/* Story Time */
+.bg-story{display:flex;flex-direction:column;gap:14px;align-items:flex-start;max-width:640px;margin:0 auto}
+.bg-story p{font-size:1.2rem;line-height:1.7}
+.bg-choices{display:flex;flex-direction:column;gap:10px;width:100%}
+.bg-choices .btn{justify-content:flex-start;text-align:left}
+body.easy .bg-story p{font-size:1.45rem;letter-spacing:.03em;word-spacing:.15em;line-height:1.9}
+/* Pickers and results */
+.bg-pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.bg-pickbtn{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;border:2px solid var(--line);border-radius:14px;background:var(--card);padding:12px}
+.bg-pickbtn span{font-size:2rem}
+.bg-pickbtn small{color:var(--muted)}
+.bg-pickbtn.sel{border-color:var(--accent);background:var(--warn-bg)}
+.bg-results{text-align:left;margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+/* Pip Says */
+.bg-call{font-family:var(--display);font-weight:800;font-size:clamp(1.8rem,6vw,3rem);text-align:center;padding:30px 10px;line-height:1.2}
+.bg-sub{text-align:center;font-weight:800;font-size:1.2rem;min-height:1.6em;color:var(--teal)}
+/* My Steps */
+.bg-checklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.bg-check{width:100%;display:flex;align-items:center;gap:12px;border:2px solid var(--line);border-radius:14px;background:var(--card);padding:12px 14px;font-size:1.15rem;font-weight:700;text-align:left}
+.bg-check .bx{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line);flex:none;font-weight:800}
+.bg-check.next{border-color:var(--accent);box-shadow:0 0 0 3px var(--warn-bg)}
+.bg-check.done{border-color:var(--good);background:var(--good-bg);color:var(--good)}
+.bg-check.done .bx{background:var(--good);border-color:var(--good);color:#fff}
+.bg-check[disabled]:not(.done){opacity:.55;cursor:default}
+.bg-redit{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.bg-redit .row{grid-column:1/-1}
+.bg-redit textarea{width:100%;font-weight:400}
+@media (max-width:520px){.bg-drum{width:110px;height:110px}.bg-food{width:56px;height:56px;font-size:1.7rem}.bg-bin{min-width:110px;padding:10px}}

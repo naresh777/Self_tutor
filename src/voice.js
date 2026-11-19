@@ -90,6 +90,31 @@ export function speak(text, id = "_") {
   sync();
 }
 
+// Speak and resolve when done, so a game can wait for Pip to finish an instruction.
+// Resolves at once with no speech, and after a time limit if the browser never reports the end.
+export function speakAsync(text, rateMul = 1) {
+  if (!canSpeak) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    speechSynthesis.cancel();
+    const s = settings();
+    const voice = bestVoice(s.name);
+    const rate = (SPEEDS.find((x) => x.id === s.speed) || SPEEDS[1]).rate * rateMul;
+    const list = chunks(text);
+    if (!list.length) { resolve(false); return; }
+    let done = false;
+    const finish = () => { if (!done) { done = true; clearTimeout(timer); resolve(true); } };
+    const timer = setTimeout(finish, 2500 + clean(text).length * 110 / rate);
+    current = "_async";
+    list.forEach((t, i) => {
+      const u = new SpeechSynthesisUtterance(t);
+      if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = "en-US";
+      u.rate = rate; u.pitch = 1.1;
+      if (i === list.length - 1) u.onend = u.onerror = () => { if (current === "_async") current = null; finish(); };
+      speechSynthesis.speak(u);
+    });
+  });
+}
+
 // Say a list of pieces one at a time (e.g. the syllables of a word, then the word), slowly.
 export function sayList(parts, rate = 0.6, id = "_word") {
   parts = parts.map(clean).filter(Boolean);

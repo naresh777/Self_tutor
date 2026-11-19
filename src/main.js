@@ -9,6 +9,7 @@ import { isCorrect, normText } from "./check.js";
 import * as ai from "./ai.js";
 import { offlineSheet, offlineLesson } from "./offline/index.js";
 import { family, save, exportJson, importJson, resetFamily } from "./store.js";
+import * as brain from "./brain/index.js";
 
 /* ---------------- helpers ---------------- */
 const $ = (s) => document.querySelector(s);
@@ -52,7 +53,8 @@ function status(p) {
 }
 const kidLog = (kidId) => family.log.filter((l) => l.kid === kidId);
 function streak(kidId) {
-  const days = new Set(kidLog(kidId).map((l) => dayKey(l.at)));
+  // Lessons and a finished Brain Gym session both count as a day practiced.
+  const days = new Set([...kidLog(kidId).map((l) => dayKey(l.at)), ...brain.brainDays(family, kidId)]);
   const d = new Date(); let n = 0;
   if (!days.has(iso(d))) d.setDate(d.getDate() - 1);
   while (days.has(iso(d))) { n++; d.setDate(d.getDate() - 1); }
@@ -91,14 +93,15 @@ const questionText = (p) => p.question + (p.type === "choice" ? ". " + p.choices
 function render() {
   const v = view.name;
   hideWord();
-  document.body.classList.toggle("easy", easyOn() && (v === "kid" || v === "sheet"));
-  $("#app").innerHTML = v === "kid" ? kidView() : v === "sheet" ? sheetView() : v === "parent" ? parentView() : v === "setup" ? setupView() : homeView();
+  document.body.classList.toggle("easy", easyOn() && (v === "kid" || v === "sheet" || v === "brain"));
+  $("#app").innerHTML = v === "kid" ? kidView() : v === "brain" ? brainView() : v === "sheet" ? sheetView() : v === "parent" ? parentView() : v === "setup" ? setupView() : homeView();
   // Moving to another problem or screen stops any reading.
   const sk = [v, view.phase, view.state, view.i, view.kind].join("|");
   const fresh = sk !== lastSpeakKey;
   if (fresh) { lastSpeakKey = sk; voice.stop(); }
   bind();
   mountPad();
+  if (v === "brain" && getKid(view.kid)) brain.mount($("#brain"), view.mode || { name: "session" }, brainCtx(getKid(view.kid)));
   // Easy reading reads each new question out loud.
   if (fresh && easyOn() && v === "sheet" && view.state === "ready" && view.phase === "q" && view.probs[view.i]) voice.toggle("question", questionText(view.probs[view.i]));
   voice.sync();
@@ -148,10 +151,23 @@ function kidView() {
   <div class="row"><span class="stars">★ ${stars} stars</span>${st ? `<span class="pill warn">${st}-day streak</span>` : ""}</div></div>
   <div class="goalbar" role="progressbar" aria-label="Year progress" aria-valuenow="${Math.min(100, pct(pos.week - 1, WEEKS))}" aria-valuemin="0" aria-valuemax="100"><i style="width:${Math.min(100, pct((pos.week - 1) * 5 + pos.day, WEEKS * 5))}%"></i></div>
   ${today_}</div>
+  ${brain.kidCard(family, k)}
   ${gkCard(k)}
   <div class="card"><div class="row spread"><h2>My course map</h2><span class="muted small">Tap a week you've reached for extra practice</span></div>
   ${subjectTabs(subject, "data-subject", k.grade)}${isOptional(subject) ? `<p class="small muted">Explore any week, any time! The first time you open a week, Pip starts with a short lesson.</p>` : ""}${courseMap(k, subject, false)}</div>`;
 }
+
+/* ---------------- Brain Gym (games run inside src/brain) ---------------- */
+function brainView() {
+  const k = getKid(view.kid); if (!k) return homeView();
+  return header(`${easyBtn(k)}<button class="btn ghost" data-kid="${k.id}">Back to ${esc(k.name)}'s page</button>`) + `<div class="card bg-card-wrap" id="brain"></div>`;
+}
+const brainCtx = (k) => ({
+  family, kid: k, save, voice,
+  addStars: (n) => { family.stars[k.id] = (family.stars[k.id] || 0) + n; },
+  exit: () => go({ name: "kid", kid: k.id }),
+  open: (mode) => go({ name: "brain", kid: k.id, mode }),
+});
 
 function gkCard(k) {
   const peek = peekFor(k.id);
@@ -442,6 +458,7 @@ function parentView() {
   <div class="row spread"><h3>Progress note from Pip</h3>${ai.aiReady() ? `<button class="btn" id="report" ${view.reporting ? "disabled" : ""}>${view.reporting ? "Writing…" : "Write a progress note"}</button>` : ""}</div>
   ${view.report && view.report.kid === kid.id ? `<div class="note">${esc(view.report.text)}</div>` : `<p class="muted small">${ai.aiReady() ? "Pip reads the course progress, test scores and missed problems, and writes a short summary with what to do next." : "Available once your Claude API key is added."}</p>`}
   </div>
+  ${brain.parentCard(family, kid, view.bgMsg)}
   <div class="card"><h2>Monthly tests</h2>${testMonths.length ? `<div class="tablewrap"><table><thead><tr><th>Month</th>${SUBJ_IDS.map((s) => `<th>${SUBJECTS[s].name}</th>`).join("")}</tr></thead><tbody>${testMonths.map((m) => `<tr><td>Month ${m} <span class="small muted">(weeks ${m * 4 - 3} to ${m * 4})</span></td>${SUBJ_IDS.map((s) => `<td>${scoreCell(tests.filter((l) => l.week && monthOf(l.week) === m && l.subject === s).at(-1))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted">The first monthly test comes at the end of week 4. Each test covers the last four weeks, and scores for every month show up here.</p>`}
   <h3>Weekly quizzes</h3>${quizWeeks.length ? `<div class="tablewrap"><table><thead><tr><th>Week</th>${SUBJ_IDS.map((s) => `<th>${SUBJECTS[s].name}</th>`).join("")}</tr></thead><tbody>${quizWeeks.map((w) => `<tr><td>Week ${w}</td>${SUBJ_IDS.map((s) => `<td>${scoreCell(quizzes.filter((l) => l.week === w && l.subject === s).at(-1))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<p class="muted small">Friday quizzes show up here.</p>`}</div>
   <div class="card"><div class="row spread"><h2>Course map</h2><span class="muted small">How each week's topic is going</span></div>${subjectTabs(subject, "data-psub", kid.grade)}${courseMap(kid, subject, true)}</div>
@@ -522,6 +539,8 @@ function bind() {
   on("[data-go]", "click", (_, b) => { const g = b.dataset.go; go({ name: g, unlocked: (g === "parent" || g === "setup") && view.unlocked, pk: view.pk }); });
   on("[data-kid]", "click", (_, b) => go({ name: "kid", kid: b.dataset.kid, subject: b.dataset.ksub || view.subject }));
   on("[data-ahead]", "click", (_, b) => go({ name: "kid", kid: b.dataset.ahead, subject: "math", ahead: true }));
+  on("[data-bg]", "click", (_, b) => go({ name: "brain", kid: view.kid, mode: { name: b.dataset.bg, routine: b.dataset.routine } }));
+  if (view.name === "parent" && view.unlocked && getKid(view.pk)) brain.bindParent(family, getKid(view.pk), $, save, (m) => { view.bgMsg = m; render(); });
   on("[data-subject]", "click", (_, b) => { view.subject = b.dataset.subject; render(); });
   on("[data-today]", "click", (_, b) => startToday(b.dataset.today));
   on("[data-extra]", "click", (_, b) => { const t = topic(b.dataset.extra); startSheet(view.kid, t.subject, "extra", null, t.id); });
@@ -550,7 +569,7 @@ function bind() {
   on("#chatin", "blur", () => (view.chatFocus = false));
   on("#pinform", "submit", (e) => { e.preventDefault(); const v = $("#pin").value.trim(); if (!v) return; if (!family.pin) { family.pin = v; save(); view.unlocked = true; } else if (v === family.pin) { view.unlocked = true; view.pinErr = false; } else view.pinErr = true; render(); });
   on("#lock", "click", () => go({ name: "home" }));
-  on("[data-pk]", "click", (_, b) => { view.pk = b.dataset.pk; view.courseSaved = false; render(); });
+  on("[data-pk]", "click", (_, b) => { view.pk = b.dataset.pk; view.courseSaved = false; view.bgMsg = null; render(); });
   on("[data-psub]", "click", (_, b) => { view.psub = b.dataset.psub; render(); });
   on("#report", "click", () => writeReport(getKid(view.pk)));
   on("#courseform", "submit", (e) => {
@@ -565,7 +584,7 @@ function bind() {
   on("[data-grade]", "change", (_, s) => { const k = getKid(s.dataset.grade); k.grade = s.value; k.course = { start: today(), pos: { week: 1, day: 0 } }; save(); render(); });
   on("[data-askdel]", "click", (_, b) => { view.confirmDel = b.dataset.askdel; render(); });
   on("[data-nodel]", "click", () => { view.confirmDel = null; render(); });
-  on("[data-del]", "click", (_, b) => { const id = b.dataset.del; family.kids = family.kids.filter((k) => k.id !== id); delete family.progress[id]; delete family.stars[id]; delete family.done[id]; family.log = family.log.filter((l) => l.kid !== id); view.confirmDel = null; save(); render(); });
+  on("[data-del]", "click", (_, b) => { const id = b.dataset.del; family.kids = family.kids.filter((k) => k.id !== id); delete family.progress[id]; delete family.stars[id]; delete family.done[id]; if (family.brain) delete family.brain[id]; family.log = family.log.filter((l) => l.kid !== id); view.confirmDel = null; save(); render(); });
   on("#vname, #vspeed", "change", () => { family.voice = { name: $("#vname").value, speed: $("#vspeed").value }; save(); voice.speak("Hi! I'm Pip. Let's read this problem together.", "_try"); });
   on("#vtry", "click", () => voice.toggle("_try", "Hi! I'm Pip. What is 7 plus 5? Take your time and think it through."));
   on("#newpin", "submit", (e) => { e.preventDefault(); const v = $("#pin2").value.trim(); if (v) { family.pin = v; view.pinSaved = true; save(); render(); } });
