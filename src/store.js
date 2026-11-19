@@ -1,7 +1,7 @@
 // Family data (kids, progress, practice log) lives in this device's local storage.
 const KEY = "pip-tutor-family-v1";
 
-const blank = () => ({ kids: [], pin: "", progress: {}, log: [], stars: {}, done: {}, lessons: {}, updated: 0 });
+const blank = () => ({ kids: [], pin: "", progress: {}, log: [], stars: {}, done: {}, lessons: {}, brain: {}, updated: 0 });
 
 // Bump when built-in weeks change, so lessons Claude wrote for the old topics are made fresh.
 // 2: Grade 2 English and math follow the class order.

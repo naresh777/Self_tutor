@@ -27,12 +27,19 @@ Every sheet also mixes in problems from earlier weeks, with weaker topics coming
 
 **Motivation.** Kids earn stars, a bonus for finishing the day, and a streak. The course map shows how each week's topic is going.
 
+**Brain Gym: games for focus and memory.** About 10 minutes a day, Monday to Friday, best right after the day's work. Each session opens with Picnic Basket (remember a growing list), plays three short games, and ends by asking what was in the basket. The games follow methods child-development experts recommend: Star Catcher (stop-go focus), Pip's Path (Simon-style sequences, plus a listen-only number round), Pair Match (memory cards), Rhythm Copy (copy a drum beat), Robot Chef (follow spoken recipe steps in order), Switch Sort (sort by a rule that changes), and Story Time (listen, predict what happens, then answer questions). Friday is "pick your own 3", weekends are rest days.
+- Each game starts at a level set in the Parent corner by **age** (5 to 12) and **difficulty** (Easy, Medium or Hard), then gets harder after 3 wins in a row and easier after 2 misses. Automatic adjusting can be turned off.
+- **Pip Says** is an off-screen movement game to play together for 3 minutes (Pip Says, Opposite Owl or Freeze Dance).
+- **My Steps** gives picture checklists for morning, homework and bedtime routines, with a timer and a star for each routine finished. Parents can edit the steps.
+- Practice makes kids better at the games themselves; gains in everyday focus come mostly from sleep, routine, small steps and checklists, which the Parent corner reminds you about.
+
 **Parent corner** (behind a PIN):
 - Course position and pace (on track, or days ahead or behind) against your school calendar
 - Monthly test and weekly quiz scores for each subject
 - Topics that need review, and every missed problem with your child's answer
 - A "Write a progress note" button for a summary with next steps
 - Course settings to set the start date and move to any week, for example to match the class
+- Brain Gym: age and difficulty, each game's level and best score, weekly trends, and the My Steps routines
 
 **Every grade, K–8, works fully offline.** Every week of the K through Grade 8 math and English course has a built-in lesson, practice sheets, quizzes and monthly tests made on the device, with pictures, reading passages and writing prompts. No internet and no API key are needed. A Claude key is optional: it adds the tutor chat, progress notes and freshly written lessons and problems. In **Family settings** you can choose **Built-in course** to stay offline even with a key saved. Older grades add pictures for angles, coordinate grids, cube volume, scatter plots and solids.
 
